@@ -1,4 +1,12 @@
 class_name Command
 extends RefCounted
 
-pass
+var label: StringName = &""
+
+
+func do() -> bool:
+	return true
+
+
+func undo() -> bool:
+	return true
