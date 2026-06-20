@@ -19,8 +19,11 @@ arc-length speed**. The renderer reads the graph; it never owns or writes geomet
 ## Deliverables (under `game/render/`)
 
 - `CurveRenderer` (node) that:
-  - Takes a `GraphModel` reference by injection; subscribes to `edge_changed` / `topology_changed`
-    and rebuilds/updates its drawn curves accordingly.
+  - Takes a `GraphModel` reference by injection; subscribes to `edge_changed` / `node_changed` /
+    `topology_changed` and updates smoothly under the high-frequency changes of a live drag.
+  - Renders movable nodes as draggable handles, and makes an edge endpoint connected to a socket
+    follow its node (dragging a connected vertex moves the curve end). View-only: read the model,
+    never write geometry back.
   - Builds a `Curve2D` per `GraphEdge` from its `curve_points` (Bézier handles) and draws it
     (`Line2D` or custom `_draw`).
   - `glow_line.gdshader` (greybox v0) for the glowing line look — parameters art-directed by prompt 06.

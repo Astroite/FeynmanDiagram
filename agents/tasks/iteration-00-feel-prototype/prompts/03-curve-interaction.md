@@ -29,6 +29,13 @@ gesture, and apply changes through reversible commands. All solution-changing ac
   - **Magnetic snap**: on `pointer_up`, if a half-edge end is within snap radius of a socket, connect
     (no pixel-exact hit required).
   - Routes `InputRouter.undo/redo` to the `UndoStack`; mutates the graph **only** via commands.
+  - **Live 1:1 preview (critical):** during `pointer_moved`, mutate the model every frame so the
+    renderer follows the cursor. The whole drag commits as **one** undo entry on `pointer_up`
+    (intermediate frames are not pushed); `cancel` rewinds the live preview with nothing committed.
+  - **Bending pulls a smooth Bézier tangent** (auto-smoothed in/out handles), not inserted hard
+    corners; one drag edits one control point.
+  - **Locked nodes are not draggable:** `NodeKind.ANCHOR` (and any `movement_constraint`) never wins
+    a node hit-test.
 
 ## Tests (GdUnit4)
 
@@ -37,6 +44,10 @@ gesture, and apply changes through reversible commands. All solution-changing ac
   undo, and reproduces after full redo — i.e. **every** state-changing action is covered.
 - Snap connects when an endpoint is within radius, and does not when outside.
 - Gesture classification picks node-drag vs edge-bend vs snap for representative pointer inputs.
+- **Live drag:** `pointer_moved` updates the model mid-drag (assert the node/curve follows the cursor
+  before `pointer_up`); one full drag pushes exactly **one** undo entry; `cancel` rewinds with none pushed.
+- **Bend smoothness:** a bend yields non-zero Bézier handles (smooth), and undo returns to the straight line.
+- **Locked nodes:** an `ANCHOR` under the pointer produces no gesture and never moves.
 
 ## Done when
 

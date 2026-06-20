@@ -32,6 +32,7 @@ var _press_pos := Vector2.ZERO
 var _current_pos := Vector2.ZERO
 var _node_start_pos := Vector2.ZERO
 var _edge_start_points: Array[CurvePoint] = []
+var _bend_point_index := -1
 
 
 func _ready() -> void:
@@ -82,8 +83,11 @@ func disconnect_input_router() -> void:
 	_input_router = null
 
 
+# Begin a gesture: classify what was grabbed and snapshot the pre-drag state.
 func handle_pointer_down(world_pos: Vector2) -> void:
-	cancel_gesture()
+	_reset_gesture_state()
+	if graph_model == null:
+		return
 	_press_pos = world_pos
 	_current_pos = world_pos
 
@@ -104,24 +108,39 @@ func handle_pointer_down(world_pos: Vector2) -> void:
 	if _active_edge != null:
 		_gesture_kind = GestureKind.EDGE_BEND
 		_edge_start_points = _duplicate_curve_points(_active_edge.curve_points)
+		_bend_point_index = _pick_or_insert_bend_point(_active_edge, world_pos)
+		_apply_bend_preview(world_pos)
 
 
+# Live 1:1 preview: mutate the model every move so the renderer follows the cursor.
+# These intermediate states are NOT pushed to the undo stack.
 func handle_pointer_moved(world_pos: Vector2) -> void:
 	_current_pos = world_pos
+	if graph_model == null:
+		return
+
+	match _gesture_kind:
+		GestureKind.NODE_DRAG:
+			_apply_node_preview(world_pos)
+		GestureKind.EDGE_BEND:
+			_apply_bend_preview(world_pos)
+		GestureKind.HALF_EDGE_DRAG:
+			_apply_half_edge_preview(world_pos)
 
 
+# End a gesture: rewind the live preview, then commit the net change as ONE command.
 func handle_pointer_up(world_pos: Vector2) -> void:
 	_current_pos = world_pos
 
 	match _gesture_kind:
 		GestureKind.NODE_DRAG:
-			_finish_node_drag(world_pos)
+			_commit_node_drag(world_pos)
 		GestureKind.EDGE_BEND:
-			_finish_edge_bend(world_pos)
+			_commit_edge_bend()
 		GestureKind.HALF_EDGE_DRAG:
-			_finish_half_edge_drag(world_pos)
+			_commit_half_edge_drag(world_pos)
 
-	cancel_gesture()
+	_reset_gesture_state()
 
 
 func undo() -> bool:
@@ -132,12 +151,17 @@ func redo() -> bool:
 	return undo_stack.redo()
 
 
+# User-initiated cancel: rewind any live preview back to the pre-drag state.
 func cancel_gesture() -> void:
-	_gesture_kind = GestureKind.NONE
-	_active_node = null
-	_active_edge = null
-	_active_half_edge = null
-	_edge_start_points.clear()
+	if graph_model != null:
+		match _gesture_kind:
+			GestureKind.NODE_DRAG:
+				if _active_node != null:
+					graph_model.move_node(_active_node, _node_start_pos)
+			GestureKind.EDGE_BEND, GestureKind.HALF_EDGE_DRAG:
+				if _active_edge != null:
+					graph_model.set_curve_points(_active_edge, _edge_start_points)
+	_reset_gesture_state()
 
 
 func active_gesture() -> int:
@@ -154,6 +178,7 @@ func classify_gesture_at(world_pos: Vector2) -> int:
 	return GestureKind.NONE
 
 
+# Anchors (and constrained nodes) are locked: they never win a node hit-test.
 func hit_test_node(world_pos: Vector2, radius: float = -1.0):
 	if graph_model == null:
 		return null
@@ -162,6 +187,8 @@ func hit_test_node(world_pos: Vector2, radius: float = -1.0):
 	var best_node = null
 	var best_distance := max_radius
 	for node in graph_model.nodes.values():
+		if not _is_node_movable(node):
+			continue
 		var distance := world_pos.distance_to(node.position)
 		if distance <= best_distance:
 			best_node = node
@@ -243,68 +270,130 @@ func half_edge_endpoint_position(half_edge: HalfEdge) -> Vector2:
 	return edge.curve_points[edge.curve_points.size() - 1].position
 
 
-func _finish_node_drag(world_pos: Vector2) -> void:
+func _apply_node_preview(world_pos: Vector2) -> void:
+	if _active_node == null:
+		return
+	graph_model.move_node(_active_node, _node_start_pos + world_pos - _press_pos)
+
+
+func _apply_bend_preview(world_pos: Vector2) -> void:
+	if _active_edge == null or _bend_point_index < 0:
+		return
+	var points := _duplicate_curve_points(_active_edge.curve_points)
+	if _bend_point_index >= points.size():
+		return
+	points[_bend_point_index].position = world_pos
+	_smooth_point_handles(points, _bend_point_index)
+	graph_model.set_curve_points(_active_edge, points)
+
+
+func _apply_half_edge_preview(world_pos: Vector2) -> void:
+	if _active_half_edge == null or _active_edge == null:
+		return
+	graph_model.set_curve_points(_active_edge, _half_edge_points(world_pos))
+
+
+func _commit_node_drag(world_pos: Vector2) -> void:
 	if graph_model == null or _active_node == null:
 		return
-
-	var target_position := _node_start_pos + world_pos - _press_pos
-	if target_position.is_equal_approx(_node_start_pos):
+	var final_position := _node_start_pos + world_pos - _press_pos
+	graph_model.move_node(_active_node, _node_start_pos) # rewind live preview
+	if final_position.is_equal_approx(_node_start_pos):
 		return
-	undo_stack.push(MoveNodeCommandScript.new().configure(graph_model, _active_node, target_position, _node_start_pos))
+	undo_stack.push(MoveNodeCommandScript.new().configure(graph_model, _active_node, final_position, _node_start_pos))
 
 
-func _finish_edge_bend(world_pos: Vector2) -> void:
+func _commit_edge_bend() -> void:
 	if graph_model == null or _active_edge == null:
 		return
-
-	var after_points := _points_with_bend(_edge_start_points, world_pos)
-	if _curve_points_equal(after_points, _edge_start_points):
+	var final_points := _duplicate_curve_points(_active_edge.curve_points)
+	graph_model.set_curve_points(_active_edge, _edge_start_points) # rewind (removes inserted point)
+	if _curve_points_equal(final_points, _edge_start_points):
 		return
-	undo_stack.push(BendEdgeCommandScript.new().configure(graph_model, _active_edge, after_points, _edge_start_points))
+	undo_stack.push(BendEdgeCommandScript.new().configure(graph_model, _active_edge, final_points, _edge_start_points))
 
 
-func _finish_half_edge_drag(world_pos: Vector2) -> void:
+func _commit_half_edge_drag(world_pos: Vector2) -> void:
 	if graph_model == null or _active_half_edge == null or _active_edge == null:
 		return
 
 	var snap := find_snap_socket(world_pos, snap_radius, _active_half_edge)
+	graph_model.set_curve_points(_active_edge, _edge_start_points) # rewind live preview
 	if not snap.is_empty():
 		undo_stack.push(ConnectHalfEdgeCommandScript.new().configure(graph_model, _active_half_edge, snap["node"], snap["socket"]))
 		return
 
-	var after_points := _points_with_half_edge_endpoint(_active_half_edge, _edge_start_points, world_pos)
-	if _curve_points_equal(after_points, _edge_start_points):
+	var final_points := _half_edge_points(world_pos)
+	if _curve_points_equal(final_points, _edge_start_points):
 		return
-	undo_stack.push(BendEdgeCommandScript.new().configure(graph_model, _active_edge, after_points, _edge_start_points))
+	undo_stack.push(BendEdgeCommandScript.new().configure(graph_model, _active_edge, final_points, _edge_start_points))
 
 
-func _points_with_bend(points: Array[CurvePoint], bend_position: Vector2) -> Array[CurvePoint]:
-	var copied := _duplicate_curve_points(points)
-	if copied.is_empty():
-		copied.append(CurvePoint.create(bend_position))
-		return copied
-	if copied.size() == 1:
-		copied.append(CurvePoint.create(bend_position))
-		return copied
-
-	var segment_index := _nearest_segment_index(copied, _press_pos)
-	copied.insert(segment_index + 1, CurvePoint.create(bend_position))
-	return copied
-
-
-func _points_with_half_edge_endpoint(half_edge: HalfEdge, points: Array[CurvePoint], endpoint_position: Vector2) -> Array[CurvePoint]:
-	var copied := _duplicate_curve_points(points)
-	if copied.is_empty():
-		copied.append(CurvePoint.create(endpoint_position))
-		return copied
-
-	if half_edge == half_edge.edge.half_edge_a:
-		copied[0].position = endpoint_position
-	elif copied.size() == 1:
-		copied.append(CurvePoint.create(endpoint_position))
+# Build the edge's points with the dragged free endpoint moved to world_pos.
+func _half_edge_points(world_pos: Vector2) -> Array[CurvePoint]:
+	var points := _duplicate_curve_points(_edge_start_points)
+	if points.is_empty():
+		points.append(CurvePoint.create(world_pos))
+	elif _active_half_edge == _active_edge.half_edge_a:
+		points[0].position = world_pos
 	else:
-		copied[copied.size() - 1].position = endpoint_position
-	return copied
+		points[points.size() - 1].position = world_pos
+	return points
+
+
+# Reuse an existing interior control point under the cursor, else insert one in the
+# nearest segment. Returns the index of the point this gesture will move.
+func _pick_or_insert_bend_point(edge: GraphEdge, world_pos: Vector2) -> int:
+	var points := edge.curve_points
+	var best_index := -1
+	var best_distance := node_hit_radius
+	for index in range(1, max(points.size() - 1, 1)):
+		var distance := world_pos.distance_to(points[index].position)
+		if distance <= best_distance:
+			best_index = index
+			best_distance = distance
+	if best_index != -1:
+		return best_index
+
+	if points.size() < 2:
+		var appended := _duplicate_curve_points(points)
+		appended.append(CurvePoint.create(world_pos))
+		graph_model.set_curve_points(edge, appended)
+		return appended.size() - 1
+
+	var segment_index := _nearest_segment_index(points, world_pos)
+	var inserted := _duplicate_curve_points(points)
+	inserted.insert(segment_index + 1, CurvePoint.create(world_pos))
+	graph_model.set_curve_points(edge, inserted)
+	return segment_index + 1
+
+
+# Give an interior point a smooth Catmull-Rom-style tangent so the curve bends, not kinks.
+func _smooth_point_handles(points: Array[CurvePoint], index: int) -> void:
+	if index <= 0 or index >= points.size() - 1:
+		return
+	var prev := points[index - 1].position
+	var next := points[index + 1].position
+	var here := points[index].position
+	var tangent := next - prev
+	if tangent.length() <= 0.0001:
+		points[index].in_handle = Vector2.ZERO
+		points[index].out_handle = Vector2.ZERO
+		return
+	var direction := tangent.normalized()
+	var handle_length: float = min(here.distance_to(prev), here.distance_to(next)) / 3.0
+	points[index].in_handle = -direction * handle_length
+	points[index].out_handle = direction * handle_length
+
+
+func _is_node_movable(node) -> bool:
+	if node == null:
+		return false
+	if node.kind == NodeKind.ANCHOR:
+		return false
+	if node.movement_constraint != null: # I1: locked / track-bound nodes
+		return false
+	return true
 
 
 func _nearest_segment_index(points: Array[CurvePoint], world_pos: Vector2) -> int:
@@ -316,6 +405,15 @@ func _nearest_segment_index(points: Array[CurvePoint], world_pos: Vector2) -> in
 			best_index = index
 			best_distance = distance
 	return best_index
+
+
+func _reset_gesture_state() -> void:
+	_gesture_kind = GestureKind.NONE
+	_active_node = null
+	_active_edge = null
+	_active_half_edge = null
+	_bend_point_index = -1
+	_edge_start_points.clear()
 
 
 func _duplicate_curve_points(points: Array) -> Array[CurvePoint]:

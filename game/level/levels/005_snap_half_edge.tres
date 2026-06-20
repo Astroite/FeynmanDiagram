@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="LevelSpec" format=3]
+
+[ext_resource type="Script" path="res://level/LevelSpec.gd" id="1_spec"]
+[ext_resource type="Script" path="res://level/objectives/FixedAnchor.gd" id="2_anchor"]
+
+[sub_resource type="Resource" id="FixedAnchor_005_Left"]
+script = ExtResource("2_anchor")
+objective_id = &"left_anchor"
+node_id = &"left"
+position = Vector2(80, 220)
+tolerance = 0.5
+
+[sub_resource type="Resource" id="FixedAnchor_005_Target"]
+script = ExtResource("2_anchor")
+objective_id = &"target_socket"
+node_id = &"target"
+position = Vector2(320, 220)
+tolerance = 0.5
+edge_id = &"beam"
+half_edge_index = 1
+socket_id = &"socket_0"
+
+[resource]
+script = ExtResource("1_spec")
+level_id = &"005"
+title = "Snap the free endpoint to the socket"
+givens = {"nodes": [{"id": "left", "kind": 0, "position": [80.0, 220.0], "movement_constraint": "locked", "sockets": [{"id": "socket_0", "local_offset": [0.0, 0.0]}]}, {"id": "target", "kind": 0, "position": [320.0, 220.0], "movement_constraint": "locked", "sockets": [{"id": "socket_0", "local_offset": [0.0, 0.0]}]}], "edges": [{"id": "beam", "particle_id": "", "time_axis_dir": 0, "curve_points": [{"position": [80.0, 220.0], "in_handle": [0.0, 0.0], "out_handle": [0.0, 0.0]}, {"position": [220.0, 220.0], "in_handle": [0.0, 0.0], "out_handle": [0.0, 0.0]}], "half_edges": [{"id": "beam:a", "node_id": "left", "socket_id": "socket_0", "particle_id": "", "fermion_flow": 0}, {"id": "beam:b", "node_id": "", "socket_id": "", "particle_id": "", "fermion_flow": 0}]}]}
+spatial_objectives = Array[Resource]([SubResource("FixedAnchor_005_Left"), SubResource("FixedAnchor_005_Target")])
+reference_solution = {"nodes": [{"id": "left", "kind": 0, "position": [80.0, 220.0], "movement_constraint": "locked", "sockets": [{"id": "socket_0", "local_offset": [0.0, 0.0]}]}, {"id": "target", "kind": 0, "position": [320.0, 220.0], "movement_constraint": "locked", "sockets": [{"id": "socket_0", "local_offset": [0.0, 0.0]}]}], "edges": [{"id": "beam", "particle_id": "", "time_axis_dir": 0, "curve_points": [{"position": [80.0, 220.0], "in_handle": [0.0, 0.0], "out_handle": [80.0, -25.0]}, {"position": [320.0, 220.0], "in_handle": [-80.0, 25.0], "out_handle": [0.0, 0.0]}], "half_edges": [{"id": "beam:a", "node_id": "left", "socket_id": "socket_0", "particle_id": "", "fermion_flow": 0}, {"id": "beam:b", "node_id": "target", "socket_id": "socket_0", "particle_id": "", "fermion_flow": 0}]}]}

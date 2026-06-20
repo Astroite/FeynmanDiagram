@@ -144,6 +144,73 @@ func test_gesture_classification_prefers_node_then_free_half_edge_then_edge() ->
 	assert_that(interaction.classify_gesture_at(Vector2(300.0, 300.0))).is_equal(CurveInteraction.GESTURE_NONE)
 
 
+func test_node_drag_is_live_and_single_undo() -> void:
+	var model := GraphModel.new()
+	var node = model.add_node(&"node", NodeKind.VERTEX, Vector2.ZERO)
+	var interaction := _interaction(model)
+
+	interaction.handle_pointer_down(Vector2.ZERO)
+	interaction.handle_pointer_moved(Vector2(10.0, 0.0))
+	assert_that(node.position).is_equal(Vector2(10.0, 0.0)) # live 1:1 follow mid-drag
+	interaction.handle_pointer_moved(Vector2(30.0, 6.0))
+	assert_that(node.position).is_equal(Vector2(30.0, 6.0))
+	interaction.handle_pointer_up(Vector2(30.0, 6.0))
+
+	assert_that(node.position).is_equal(Vector2(30.0, 6.0))
+	assert_that(interaction.undo_stack.undo_count()).is_equal(1) # whole drag = one undo entry
+	assert_that(interaction.undo()).is_true()
+	assert_that(node.position).is_equal(Vector2.ZERO)
+
+
+func test_bend_creates_smooth_curve_not_kink() -> void:
+	var model := GraphModel.new()
+	var edge := model.add_edge(&"edge", [
+		_point(Vector2.ZERO),
+		_point(Vector2(100.0, 0.0)),
+	])
+	var interaction := _interaction(model)
+
+	interaction.handle_pointer_down(Vector2(50.0, 0.0)) # grab the straight segment
+	interaction.handle_pointer_moved(Vector2(50.0, 40.0))
+
+	assert_that(edge.curve_points.size()).is_equal(3) # one interior point, inserted once
+	assert_that(edge.curve_points[1].position).is_equal(Vector2(50.0, 40.0)) # live follow
+	assert_bool(edge.curve_points[1].out_handle != Vector2.ZERO).is_true() # smooth tangent, not a kink
+
+	interaction.handle_pointer_up(Vector2(50.0, 40.0))
+	assert_that(interaction.undo_stack.undo_count()).is_equal(1)
+	assert_that(interaction.undo()).is_true()
+	assert_that(edge.curve_points.size()).is_equal(2) # back to a straight line
+
+
+func test_anchor_node_is_not_draggable() -> void:
+	var model := GraphModel.new()
+	var anchor = model.add_node(&"anchor", NodeKind.ANCHOR, Vector2(50.0, 50.0))
+	var interaction := _interaction(model)
+
+	interaction.handle_pointer_down(Vector2(50.0, 50.0))
+	assert_that(interaction.active_gesture()).is_equal(CurveInteraction.GESTURE_NONE)
+	interaction.handle_pointer_moved(Vector2(90.0, 90.0))
+	interaction.handle_pointer_up(Vector2(90.0, 90.0))
+
+	assert_that(anchor.position).is_equal(Vector2(50.0, 50.0)) # locked endpoint never moved
+	assert_that(interaction.undo_stack.undo_count()).is_equal(0)
+
+
+func test_cancel_rewinds_live_preview() -> void:
+	var model := GraphModel.new()
+	var node = model.add_node(&"node", NodeKind.VERTEX, Vector2.ZERO)
+	var interaction := _interaction(model)
+
+	interaction.handle_pointer_down(Vector2.ZERO)
+	interaction.handle_pointer_moved(Vector2(25.0, 0.0))
+	assert_that(node.position).is_equal(Vector2(25.0, 0.0))
+	interaction.cancel_gesture()
+
+	assert_that(node.position).is_equal(Vector2.ZERO) # preview rewound
+	assert_that(interaction.undo_stack.undo_count()).is_equal(0) # nothing committed
+
+
 func _interaction(model: GraphModel) -> CurveInteraction:
 	var interaction := CurveInteraction.new()
 	auto_free(interaction)
