@@ -1,0 +1,26 @@
+# ── Godot 4 (project lives in game/) ─────────────────────────────
+# Editor import cache & per-machine data, regenerated on open.
+.godot/
+.import/
+
+# Export artifacts & configs (export_presets.cfg may hold credentials).
+export.cfg
+export_presets.cfg
+/build/
+/exports/
+
+# Auto-generated from CSV translation tables.
+*.translation
+
+# Mono / C# (not used yet; kept defensively).
+.mono/
+data_*/
+mono_crash.*.json
+
+# ── OS / editor cruft ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.tmp
+*.swp
