@@ -9,6 +9,9 @@ export_presets.cfg
 /build/
 /exports/
 
+# GdUnit4 generated reports.
+game/reports/
+
 # Auto-generated from CSV translation tables.
 *.translation
 
