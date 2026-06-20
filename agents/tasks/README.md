@@ -46,7 +46,9 @@ One iteration is `discussion`/`implementation`/`acceptance` at a time; everythin
 | 7 | `iteration-07-beta-release` | Perf, localization, Steam features, release prep | doc02 §10 阶段5 | — |
 | 8 | `iteration-08-post-launch` | Post-launch fixes, then evaluate UGC/Workshop & expansion | doc02 §10 阶段6 | Gate E — UGC |
 
-Current iteration: **0** (ready to enter its discussion phase). All others: `not-started`.
+Current iteration: **0** — **discussion** phase complete: plan in
+`iteration-00-feel-prototype/DISCUSSION.md`, executable tasks in `prompts/00–06`. Ready to enter
+**implementation**. All others: `not-started`.
 
 ## Mapping to the design docs
 
