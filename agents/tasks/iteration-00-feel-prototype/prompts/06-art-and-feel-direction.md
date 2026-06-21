@@ -22,8 +22,8 @@ quantum instrument".
   intensity — anchored to `arts/style/00.png`. Hand these to prompt 04 as `glow_line.gdshader` params.
 - **Pulse & completion timing**: pulse speed (constant arc-length), completion show 2–5 s, skippable;
   the basic snap / legal-attach audio-visual feedback sketch (doc01 §5.3) — feeds prompt 04.
-- **6 greybox level layouts**: ring / forbidden-zone / anchor placements for prologue 1–6 — feeds
-  prompt 05's `.tres` data.
+- **6 greybox level layouts**: given lines, vertices, and the target connected graph for prologue 1–6
+  — feeds prompt 05's `.tres` data.
 
 ## Done when
 

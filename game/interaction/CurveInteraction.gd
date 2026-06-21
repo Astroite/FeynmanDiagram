@@ -389,11 +389,7 @@ func _smooth_point_handles(points: Array[CurvePoint], index: int) -> void:
 func _is_node_movable(node) -> bool:
 	if node == null:
 		return false
-	if node.kind == NodeKind.ANCHOR:
-		return false
-	if node.movement_constraint != null: # I1: locked / track-bound nodes
-		return false
-	return true
+	return node.kind != NodeKind.ANCHOR
 
 
 func _nearest_segment_index(points: Array[CurvePoint], world_pos: Vector2) -> int:

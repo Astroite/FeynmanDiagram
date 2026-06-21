@@ -25,8 +25,7 @@ reads this; it never owns geometry truth.
 class_name GraphNode
 var id: StringName
 var kind: int          # NodeKind.ANCHOR (fixed external endpoint) | NodeKind.VERTEX (movable)
-var position: Vector2  # geometric position (truth for spatial objectives)
-var movement_constraint: SpatialConstraint = null   # e.g. locked, on-track (I0 uses locked anchors)
+var position: Vector2  # geometric position — a layout/view property, never a win condition
 var sockets: Array[Socket] = []
 
 class_name Socket
@@ -74,19 +73,21 @@ arrive in I1. I0 keeps the topology vocabulary (node/socket/half-edge/edge) only
 | `GraphModel` | class (owned by level) | Authoritative graph; the only writer of truth. | signals above; `move_node`, `set_curve_points`, `connect_half_edge`, … |
 | `CurveInteraction` | node | Hit-test + classify gesture (drag node / bend edge / snap half-edge) → build reversible `Command`s → mutate `GraphModel`; magnetic snap (no pixel-exact hit); own `UndoStack`. | consumes `InputRouter` signals; `Command.do/undo`, `UndoStack.push/undo/redo` |
 | `CurveRenderer` | node | Render edges from `GraphModel` (view only); glow shader; pulse at constant arc-length speed. | reads `edge_changed`; `play_pulse()` |
-| `LevelRuntime` | node/scene | Load level data (givens + spatial objectives); own the `GraphModel`; check geometric completion; trigger completion show. | `level_loaded`, `objective_met`, `level_complete` |
+| `LevelRuntime` | node/scene | Load level data (givens + reference solution); own the `GraphModel`; judge **graph completeness** (connected + no dangling half-edges); trigger completion show. | `level_loaded`, `objective_met`, `level_complete` |
 
 Data flow (one direction): `InputRouter → CurveInteraction → GraphModel → (signals) → CurveRenderer`.
-`LevelRuntime` checks objectives off `GraphModel`, never off pixels.
+`LevelRuntime` judges completeness off `GraphModel`, never off pixels.
 
-## Greybox level data — I0 (geometry-only)
+## Greybox level data — I0 (connect & tidy)
 
-6 levels = doc01 §9 序章 1–6. Objectives are **spatial only** (precursor to `SpatialConstraintSystem`):
+6 levels = doc01 §9 序章 1–6. The goal is **graph completeness**, judged purely on topology — there
+are no geometric objectives:
 
-- `observation_ring` (must pass through), `forbidden_zone` (curve must avoid), `fixed_anchor`
-  (locked endpoints), plus the "snap half-edge to glowing socket" intro and a 3-line convergence.
-- Stored as data (`res://level/levels/00x.tres` or `.json`), not code (CLAUDE.md "levels are data").
-- Each level stores a machine-verifiable reference solution (curve points that satisfy objectives).
+- A level is solved when the graph is connected, has no dangling half-edges / isolated subgraphs, and
+  every required external endpoint is wired (doc01 §4.4 steps 1–2). Levels progress from connecting one
+  line, to bending/tidying, to a three-line convergence.
+- Stored as data (`res://level/levels/00x.tres`), not code (CLAUDE.md "levels are data").
+- Each level stores a machine-verifiable reference solution (a connected, dangling-free graph).
 
 ## Test list — GdUnit4
 
@@ -94,14 +95,14 @@ Data flow (one direction): `InputRouter → CurveInteraction → GraphModel → 
 - `UndoStack`: any op sequence `do → undo` returns to initial state; `redo` reproduces (covers **every**
   state-changing action — Gate A requirement).
 - Arc-length: pulse sampler advances near-constant arc length per step (no speedup near control points).
-- `LevelRuntime`: point-in-ring and segment-vs-forbidden-zone objective checks; reference solution of
-  each of the 6 levels validates as complete.
+- `LevelRuntime`: `is_connected` / `has_dangling_half_edges` checks; an incomplete graph is rejected;
+  the reference solution of each of the 6 levels validates as complete.
 
 ## Manual / art deliverables (human, not agent)
 
 - Greybox visual target: dark space bg, glowing line, sparse particle dust (ref `arts/style/00.png`).
 - Glow-line shader v0 art direction (color/width/bloom feel) — agent implements, human art-directs.
-- The 6 greybox level layouts (ring/zone/anchor placement).
+- The 6 greybox level layouts (given lines, vertices, and the target connected graph).
 - Reference pulse timing: 2–5 s completion show, constant speed, skippable.
 
 ## Prompt breakdown & dependency order
@@ -112,7 +113,7 @@ Data flow (one direction): `InputRouter → CurveInteraction → GraphModel → 
 ├─ 02-input-router              (00)             — semantic input autoload
 03-curve-interaction            (01, 02)         — intents → commands → graph; undo/redo; snap
 04-curve-renderer               (01)             — glow edges + constant arc-length pulse
-05-level-runtime-and-greybox    (03, 04)         — level data, objective checks, 6 levels, show
+05-level-runtime-and-greybox    (03, 04)         — level data, completeness judging, 6 levels, show
 06-art-and-feel-direction       (parallel/human) — greybox look, shader direction, pulse timing
 ```
 
@@ -122,4 +123,4 @@ Data flow (one direction): `InputRouter → CurveInteraction → GraphModel → 
 - "Drag vertex" vs "bend curve" clearly distinct; mis-input is not the main complaint.
 - Stable framerate while dragging on the low-spec target.
 - Undo/redo covers every solution-changing action (enforced by the `UndoStack` test).
-- **Gate A question:** would a player keep going *just* to make the line smooth and watch it flow?
+- **Gate A question:** is connecting + tidying a graph satisfying enough to keep going?

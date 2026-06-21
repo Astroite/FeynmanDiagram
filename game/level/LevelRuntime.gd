@@ -5,7 +5,6 @@ const CurveInteractionScript := preload("res://interaction/CurveInteraction.gd")
 const CurveRendererScript := preload("res://render/CurveRenderer.gd")
 
 signal level_loaded(spec: Resource)
-signal objective_met(objective: Resource)
 signal level_complete(spec: Resource)
 
 var level_spec: Resource = null
@@ -13,7 +12,6 @@ var graph_model: GraphModel = null
 var curve_interaction: Node = null
 var curve_renderer: Node = null
 
-var _objective_states: Dictionary = {}
 var _is_complete := false
 
 
@@ -23,12 +21,11 @@ func load_level(spec: Resource) -> bool:
 
 	level_spec = spec
 	_install_model(spec.create_model_from_givens())
-	_objective_states.clear()
 	_is_complete = false
 	_ensure_children()
 	_inject_model()
 	level_loaded.emit(spec)
-	evaluate_objectives()
+	evaluate_completeness()
 	return true
 
 
@@ -46,28 +43,18 @@ func apply_reference_solution() -> bool:
 
 	_install_model(reference_model)
 	_inject_model()
-	evaluate_objectives()
+	evaluate_completeness()
 	return true
 
 
-func evaluate_objectives() -> bool:
-	if level_spec == null or graph_model == null:
+# A level is solved purely on topology: the graph must be connected with no dangling
+# half-edges (doc01 §4.4). Geometry never participates — there are no spatial objectives.
+func evaluate_completeness() -> bool:
+	if graph_model == null:
 		return false
 
-	var all_met := true
-	for objective: Resource in level_spec.spatial_objectives:
-		if objective == null or not objective.has_method("is_met"):
-			all_met = false
-			continue
-
-		var met := bool(objective.is_met(graph_model))
-		var objective_id := _objective_id(objective)
-		if met and not bool(_objective_states.get(objective_id, false)):
-			objective_met.emit(objective)
-		_objective_states[objective_id] = met
-		all_met = all_met and met
-
-	if all_met and not _is_complete and not level_spec.spatial_objectives.is_empty():
+	var complete := graph_model.is_complete()
+	if complete and not _is_complete:
 		_is_complete = true
 		if curve_renderer != null and curve_renderer.has_method("play_completion"):
 			curve_renderer.play_completion()
@@ -88,10 +75,10 @@ func _install_model(model: GraphModel) -> void:
 func _connect_graph_model() -> void:
 	if graph_model == null:
 		return
-	if not graph_model.node_changed.is_connected(_on_graph_node_changed):
-		graph_model.node_changed.connect(_on_graph_node_changed)
-	if not graph_model.edge_changed.is_connected(_on_graph_edge_changed):
-		graph_model.edge_changed.connect(_on_graph_edge_changed)
+	if not graph_model.node_changed.is_connected(_on_graph_changed):
+		graph_model.node_changed.connect(_on_graph_changed)
+	if not graph_model.edge_changed.is_connected(_on_graph_changed):
+		graph_model.edge_changed.connect(_on_graph_changed)
 	if not graph_model.topology_changed.is_connected(_on_graph_changed):
 		graph_model.topology_changed.connect(_on_graph_changed)
 
@@ -99,24 +86,16 @@ func _connect_graph_model() -> void:
 func _disconnect_graph_model() -> void:
 	if graph_model == null:
 		return
-	if graph_model.node_changed.is_connected(_on_graph_node_changed):
-		graph_model.node_changed.disconnect(_on_graph_node_changed)
-	if graph_model.edge_changed.is_connected(_on_graph_edge_changed):
-		graph_model.edge_changed.disconnect(_on_graph_edge_changed)
+	if graph_model.node_changed.is_connected(_on_graph_changed):
+		graph_model.node_changed.disconnect(_on_graph_changed)
+	if graph_model.edge_changed.is_connected(_on_graph_changed):
+		graph_model.edge_changed.disconnect(_on_graph_changed)
 	if graph_model.topology_changed.is_connected(_on_graph_changed):
 		graph_model.topology_changed.disconnect(_on_graph_changed)
 
 
-func _on_graph_node_changed(_node) -> void:
-	_on_graph_changed()
-
-
-func _on_graph_edge_changed(_edge: GraphEdge) -> void:
-	_on_graph_changed()
-
-
-func _on_graph_changed() -> void:
-	evaluate_objectives()
+func _on_graph_changed(_arg = null) -> void:
+	evaluate_completeness()
 
 
 func _ensure_children() -> void:
@@ -141,12 +120,3 @@ func _inject_model() -> void:
 		curve_interaction.set_graph_model(graph_model)
 	if curve_renderer != null and curve_renderer.has_method("set_graph_model"):
 		curve_renderer.set_graph_model(graph_model)
-
-
-func _objective_id(objective: Resource) -> StringName:
-	if objective == null:
-		return &""
-	var value = objective.get("objective_id")
-	if value != null:
-		return StringName(str(value))
-	return StringName(str(objective))

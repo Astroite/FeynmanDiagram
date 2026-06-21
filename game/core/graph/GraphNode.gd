@@ -4,7 +4,6 @@ extends RefCounted
 var id: StringName
 var kind: int = NodeKind.VERTEX
 var position: Vector2 = Vector2.ZERO
-var movement_constraint: Variant = null
 var sockets: Array[Socket] = []
 
 

@@ -36,7 +36,7 @@ One iteration is `discussion`/`implementation`/`acceptance` at a time; everythin
 
 | # | Folder | Goal (one line) | Source | Business gate |
 |---|--------|-----------------|--------|---------------|
-| 0 | `iteration-00-feel-prototype` | Prove the bare curve feel is fun with zero physics | doc01 §14 P0 | Gate A — Feel |
+| 0 | `iteration-00-feel-prototype` | Connect given lines into one complete graph; tidying feels good | doc01 §14 P0 | Gate A — Feel |
 | 1 | `iteration-01-qed-gameplay-prototype` | QED rules create reasoning, not blind guessing | doc01 §14 P1 | Gate B — Gameplay |
 | 2 | `iteration-02-qed-vertical-slice` | A stranger understands, enjoys & remembers the slice | doc01 §14 P2 / doc02 §10 阶段0 | — (slice exit) |
 | 3 | `iteration-03-pipeline-and-demo` | Ship a 20–30 min free public demo + store page | doc02 §10 阶段1 | Gate C — Commercial |

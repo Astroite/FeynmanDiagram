@@ -43,9 +43,9 @@ Treat doc 01 as the current target and doc 02 as the longer horizon — do not p
 
 ## The game in one line
 
-Players drag, bend, and reconnect glowing particle lines so a microscopic interaction closes *both*
-spatially (curves pass observation rings, avoid forbidden zones) *and* grammatically (vertex
-templates, fermion flow, particle identity, and graph topology are all physically valid).
+Players connect, bend, and reconnect glowing particle lines into a microscopic interaction that is
+*physically valid* — vertex templates, fermion flow, particle identity, and graph topology all check
+out. Curves are an expressive view of the graph; their shape never decides the puzzle.
 
 ## Engine & running
 
@@ -88,21 +88,21 @@ Deliberate decisions from doc 01 §12.4 and doc 02 §8.2. Respect them when writ
   fermion flow. Never conflate them.
 - **Conserved quantities use exact integer units, never floating-point tolerance.** Charge is in
   thirds of *e* (`charge3`; electron = `-3`). Lepton/baryon numbers are integers.
-- **Physics layer and spatial/level layer are decoupled.** A science-rule change must not break curve
-  feel; level-art tweaks must not change the physics solution.
-- **Solutions are judged by rules, not by matching a reference image.** Validation pipeline:
-  endpoints → graph integrity (no dangling half-edges / isolated subgraphs) → vertex-template match →
-  fermion flow & external states → exact conservation → topology canonicalization (isomorphism dedup)
-  → spatial objectives → level-specific goals. Geometry participates only when a level explicitly
-  defines a spatial objective.
+- **Physics layer and level-presentation layer are decoupled.** A science-rule change must not break
+  curve feel; level-art tweaks must not change the physics solution.
+- **Solutions are judged by physics rules, never by geometry.** Validation pipeline: endpoints →
+  graph integrity (no dangling half-edges / isolated subgraphs) → vertex-template match → fermion
+  flow & external states → exact conservation → topology canonicalization (isomorphism dedup) →
+  level-specific goals. Curve shape and position never participate in judging — there are **no**
+  geometric win conditions (no observation rings, forbidden zones, or other spatial objectives).
 - **Every physics rule must have automated unit tests, and every level stores at least one
   machine-verifiable reference solution** (without requiring the player to reproduce its geometry).
-- **Levels are data, not code.** Level constraints (givens, allowed actions/particles, observation
-  rings, forbidden zones, accepted topologies, hint chains, completion sequence) are configured as
-  data; an internal level editor/validator is a slice-priority deliverable, not a later add-on.
+- **Levels are data, not code.** Level constraints (givens, allowed actions/particles, accepted
+  topologies, required solution count, hint chains, completion sequence) are configured as data; an
+  internal level editor/validator is a slice-priority deliverable, not a later add-on.
 
 See doc 01 §12.2 for the planned module breakdown (`GraphModel`, `PhysicsGrammar`,
-`TopologyCanonicalizer`, `SpatialConstraintSystem`, `PulseSimulation`, `HintDirector`, `LevelRuntime`,
+`TopologyCanonicalizer`, `PulseSimulation`, `HintDirector`, `LevelRuntime`,
 etc.) and §12.3 for the `ParticleSpec` / `VertexRule` / `GraphNode` / `GraphEdge` / `LevelSpec` data
 shapes — match those names when implementing.
 

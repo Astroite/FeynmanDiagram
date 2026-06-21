@@ -121,6 +121,46 @@ func get_edge(edge_id: StringName) -> GraphEdge:
 	return edges.get(edge_id, null)
 
 
+# A graph is complete when it is connected and has no dangling half-edges — the real
+# Feynman-graph requirement (doc01 §4.4). This is I0's only win condition; geometry never judges.
+func is_complete() -> bool:
+	return not has_dangling_half_edges() and is_graph_connected()
+
+
+func has_dangling_half_edges() -> bool:
+	for edge: GraphEdge in edges.values():
+		for half_edge: HalfEdge in edge.half_edges():
+			if not half_edge.has_endpoint():
+				return true
+	return false
+
+
+func is_graph_connected() -> bool:
+	if nodes.size() <= 1:
+		return true
+
+	var visited := {}
+	var start: StringName = nodes.keys()[0]
+	var stack: Array[StringName] = [start]
+	visited[start] = true
+	while not stack.is_empty():
+		var current_node = nodes[stack.pop_back()]
+		for edge: GraphEdge in edges.values():
+			var a = edge.half_edge_a.node
+			var b = edge.half_edge_b.node
+			if a == null or b == null:
+				continue
+			var other = null
+			if a == current_node:
+				other = b
+			elif b == current_node:
+				other = a
+			if other != null and not visited.has(other.id):
+				visited[other.id] = true
+				stack.append(other.id)
+	return visited.size() == nodes.size()
+
+
 func to_dict() -> Dictionary:
 	var node_entries: Array[Dictionary] = []
 	for node_id in _sorted_keys(nodes):
@@ -135,7 +175,6 @@ func to_dict() -> Dictionary:
 			"id": String(node.id),
 			"kind": node.kind,
 			"position": CurvePoint._vector_to_dict(node.position),
-			"movement_constraint": node.movement_constraint,
 			"sockets": socket_entries,
 		})
 
@@ -175,7 +214,6 @@ static func from_dict(data: Dictionary) -> GraphModel:
 			CurvePoint._vector_from_dict(node_data.get("position", {})),
 			socket_offsets
 		)
-		node.movement_constraint = node_data.get("movement_constraint", null)
 		for index in range(socket_ids.size()):
 			node.sockets[index].id = socket_ids[index]
 
