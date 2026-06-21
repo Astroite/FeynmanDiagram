@@ -66,6 +66,22 @@ func is_level_complete() -> bool:
 	return _is_complete
 
 
+func set_visual_layer_visible(is_visible: bool) -> void:
+	_ensure_children()
+	if curve_renderer is CanvasItem:
+		curve_renderer.visible = is_visible
+
+
+func set_interaction_enabled(is_enabled: bool) -> void:
+	_ensure_children()
+	if curve_interaction == null:
+		return
+	if is_enabled and curve_interaction.has_method("connect_input_router"):
+		curve_interaction.connect_input_router()
+	elif not is_enabled and curve_interaction.has_method("disconnect_input_router"):
+		curve_interaction.disconnect_input_router()
+
+
 func _install_model(model: GraphModel) -> void:
 	_disconnect_graph_model()
 	graph_model = model

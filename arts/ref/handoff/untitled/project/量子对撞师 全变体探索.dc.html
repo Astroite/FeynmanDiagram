@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:#0b0c14;font-family:'Noto Sans SC',sans-serif;-webkit-font-smoothing:antialiased}
+  @keyframes qrBreathe{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}
+  @keyframes qrDrift{0%{transform:translate(0,0)}50%{transform:translate(7px,-9px)}100%{transform:translate(0,0)}}
+  @keyframes qrFlow{to{stroke-dashoffset:-1400}}
+  @keyframes qrWave{to{stroke-dashoffset:-48}}
+  @keyframes qrSpin{to{transform:rotate(360deg)}}
+  @keyframes qrSpinR{to{transform:rotate(-360deg)}}
+  @keyframes qrTwinkle{0%,100%{opacity:.35}50%{opacity:1}}
+  @keyframes qrFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  @keyframes qrHue{to{filter:hue-rotate(360deg)}}
+  @keyframes qrBlink{0%,100%{opacity:.25}50%{opacity:.9}}
+</style>
+</helmet>
+<div style="width:max-content;min-width:100%;min-height:100vh;box-sizing:border-box;padding:54px;background:radial-gradient(1400px 900px at 30% -10%, #15182b, #0b0c14 60%)">
+
+  <!-- ============ INTRO / DESIGN REASONING ============ -->
+  <div style="max-width:960px;margin-bottom:64px;color:#c9d2ee">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <svg width="40" height="40" viewBox="0 0 58 58"><circle cx="29" cy="29" r="25" fill="none" stroke="#7fa6ff" stroke-width="1" opacity=".55"/><circle cx="29" cy="29" r="18" fill="none" stroke="#7fa6ff" stroke-width="1" opacity=".28"/><line x1="9" y1="9" x2="24" y2="24" stroke="#9fc0ff" stroke-width="1.3"/><line x1="49" y1="9" x2="34" y2="24" stroke="#9fc0ff" stroke-width="1.3"/><line x1="9" y1="49" x2="24" y2="34" stroke="#9fc0ff" stroke-width="1.3"/><line x1="49" y1="49" x2="34" y2="34" stroke="#9fc0ff" stroke-width="1.3"/><circle cx="29" cy="29" r="4.2" fill="#bfe9ff"/></svg>
+      <div>
+        <div style="font:300 30px/1 'Noto Sans SC';color:#fff;letter-spacing:.04em">量子对撞师 · 视觉原型</div>
+        <div style="font:500 12px 'Space Grotesk';letter-spacing:.34em;color:#6f79a0;margin-top:6px">QUANTUM RESONANCE — VISUAL PROTOTYPE KIT</div>
+      </div>
+    </div>
+    <div style="font:300 15px/1.85 'Noto Sans SC';color:#9aa4c8;max-width:780px">
+      基于参考图建立的深空 / 量子辉光视觉系统。所有画面按 <b style="color:#cfe9ff;font-weight:500">1280×720</b> 绘制,Godot 落地时按 <b style="color:#cfe9ff;font-weight:500">×1.5</b> 还原到 1920×1080。核心解密 = 从底部托盘选取粒子,长按顶点拖拽连线,拼出输入/输出正确的费曼图。每个界面给出 2–3 个变体供混搭。
+    </div>
+    <div style="display:flex;gap:30px;margin-top:24px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:9px"><span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,#dff4ff,#3aa6ff 62%,transparent 74%);box-shadow:0 0 14px #3aa6ff"></span><span style="font:300 12.5px 'Noto Sans SC';color:#9aa4c8">轻子 / 电子族 · 青</span></div>
+      <div style="display:flex;align-items:center;gap:9px"><span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,#e6dcff,#9a6bff 62%,transparent 74%);box-shadow:0 0 14px #9a6bff"></span><span style="font:300 12.5px 'Noto Sans SC';color:#9aa4c8">反粒子 / μ族 · 紫</span></div>
+      <div style="display:flex;align-items:center;gap:9px"><span style="width:34px;height:0;border-top:2px dashed #57d3ff"></span><span style="font:300 12.5px 'Noto Sans SC';color:#9aa4c8">光子 γ · 波浪线</span></div>
+      <div style="display:flex;align-items:center;gap:9px"><span style="width:34px;height:0;border-top:2px solid #eaf0ff"></span><span style="font:300 12.5px 'Noto Sans SC';color:#9aa4c8">费米子 · 实线带箭头</span></div>
+      <div style="display:flex;align-items:center;gap:9px"><span style="font:300 13px 'Space Grotesk';color:#ffd36a">★</span><span style="font:300 12.5px 'Noto Sans SC';color:#9aa4c8">完成度 · 金</span></div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION: MAIN MENU ============ -->
+  <div style="margin-bottom:18px;display:flex;align-items:baseline;gap:14px">
+    <div style="font:500 14px 'Space Grotesk';letter-spacing:.22em;color:#aeb8df">01 — 主菜单</div>
+    <div style="font:300 13px 'Noto Sans SC';color:#5e688f">MAIN MENU</div>
+  </div>
+  <div style="display:flex;gap:48px;align-items:flex-start;margin-bottom:80px">
+
+    <!-- MENU A -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 A — 忠于参考 · 左侧竖向菜单</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(1100px 760px at 80% 70%, rgba(70,120,235,.22), transparent 58%),radial-gradient(820px 560px at 64% 14%, rgba(150,100,235,.20), transparent 56%),radial-gradient(640px 640px at 14% 92%, rgba(40,80,180,.13), transparent 60%),linear-gradient(180deg,#0a0c18,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsA }}"></div>
+        <svg viewBox="0 0 1280 720" width="1280" height="720" style="position:absolute;inset:0">
+          <defs>
+            <linearGradient id="strmA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cfeaff"/><stop offset=".5" stop-color="#6aa8ff"/><stop offset="1" stop-color="#a682ff"/></linearGradient>
+            <filter id="blA" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.4"/></filter>
+          </defs>
+          <g fill="none" stroke="url(#strmA)" stroke-linecap="round" filter="url(#blA)" style="animation:qrFlow 16s linear infinite">
+            <path d="M 470 -20 C 560 160, 600 360, 770 480" stroke-width="1.3" opacity=".5" stroke-dasharray="3 9"/>
+            <path d="M 470 -20 C 610 180, 780 320, 1000 540" stroke-width="1.5" opacity=".55" stroke-dasharray="2 10"/>
+            <path d="M 470 -20 C 520 210, 540 440, 690 620" stroke-width="1.1" opacity=".4" stroke-dasharray="2 11"/>
+            <path d="M 470 -20 C 660 140, 940 250, 1170 430" stroke-width="1.2" opacity=".42" stroke-dasharray="2 12"/>
+            <path d="M 470 -20 C 560 230, 740 540, 1040 660" stroke-width="1" opacity=".34" stroke-dasharray="2 12"/>
+            <path d="M 470 -20 C 720 120, 1010 210, 1230 320" stroke-width="1" opacity=".34" stroke-dasharray="2 12"/>
+          </g>
+          <path d="M 468 -20 C 600 170, 760 330, 980 530" fill="none" stroke="#eaf6ff" stroke-width="1.6" opacity=".92" filter="url(#blA)"/>
+          <circle cx="470" cy="-6" r="9" fill="#eaf6ff" filter="url(#blA)"/>
+        </svg>
+        <!-- swirl -->
+        <div style="position:absolute;left:920px;top:520px;width:230px;height:230px;border-radius:50%;border:1px solid rgba(120,170,255,.16);animation:qrSpin 48s linear infinite"></div>
+        <div style="position:absolute;left:958px;top:558px;width:154px;height:154px;border-radius:50%;border:1px solid rgba(150,120,255,.14);animation:qrSpinR 36s linear infinite"></div>
+        <div style="position:absolute;left:1010px;top:610px;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle,#fff,#7fd0ff 45%,transparent 70%);box-shadow:0 0 40px 10px rgba(110,190,255,.7);animation:qrBreathe 4.5s ease-in-out infinite"></div>
+        <div style="position:absolute;left:760px;top:300px;width:8px;height:8px;border-radius:50%;background:#cfeaff;box-shadow:0 0 16px 3px #7fb8ff;animation:qrBreathe 5s ease-in-out infinite"></div>
+        <div style="position:absolute;left:1130px;top:430px;width:7px;height:7px;border-radius:50%;background:#d8c6ff;box-shadow:0 0 14px 3px #a07bff;animation:qrBreathe 6s ease-in-out .8s infinite"></div>
+
+        <!-- top-right icons -->
+        <div style="position:absolute;top:34px;right:40px;display:flex;gap:22px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7px"><div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6;backdrop-filter:blur(4px)" style-hover="border-color:#8fd0ff;box-shadow:0 0 16px rgba(110,190,255,.5)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2l-.3-2.5H8.7l-.3 2.5a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 4 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1c.6.5 1.3.9 2 1.2l.3 2.5h2.6l.3-2.5c.7-.3 1.4-.7 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/></svg></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">设置</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7px"><div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff;box-shadow:0 0 16px rgba(110,190,255,.5)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 9a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1.9-1.1 1.8"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">帮助</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7px"><div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff;box-shadow:0 0 16px rgba(110,190,255,.5)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">公告</div></div>
+        </div>
+
+        <!-- title block -->
+        <div style="position:absolute;left:84px;top:188px">
+          <div style="display:flex;align-items:center;gap:26px">
+            <svg width="78" height="78" viewBox="0 0 58 58"><circle cx="29" cy="29" r="25" fill="none" stroke="#8fb0ff" stroke-width="1" opacity=".6"/><circle cx="29" cy="29" r="18" fill="none" stroke="#8fb0ff" stroke-width="1" opacity=".3"/><line x1="9" y1="9" x2="23.5" y2="23.5" stroke="#bcd2ff" stroke-width="1.3"/><line x1="49" y1="9" x2="34.5" y2="23.5" stroke="#bcd2ff" stroke-width="1.3"/><line x1="9" y1="49" x2="23.5" y2="34.5" stroke="#bcd2ff" stroke-width="1.3"/><line x1="49" y1="49" x2="34.5" y2="34.5" stroke="#bcd2ff" stroke-width="1.3"/><circle cx="29" cy="29" r="4.6" fill="#cdeeff"/><circle cx="29" cy="29" r="4.6" fill="none" stroke="#7fd0ff" stroke-width="2" opacity=".6" style="animation:qrBreathe 4s ease-in-out infinite"/></svg>
+            <div>
+              <div style="font:300 62px/1 'Noto Sans SC';color:#fff;letter-spacing:.08em;text-shadow:0 0 30px rgba(120,180,255,.4)">量子对撞师</div>
+              <div style="display:flex;align-items:center;gap:14px;margin-top:14px"><span style="height:1px;width:30px;background:linear-gradient(90deg,transparent,#7d88b5)"></span><span style="font:300 16px 'Space Grotesk';letter-spacing:.5em;color:#aab4d8">QUANTUM RESONANCE</span><span style="height:1px;width:30px;background:linear-gradient(90deg,#7d88b5,transparent)"></span></div>
+            </div>
+          </div>
+          <div style="font:200 17px 'Noto Sans SC';color:#8b95ba;letter-spacing:.16em;margin-top:22px;margin-left:6px">在量子深处,因碰撞而生的秩序。</div>
+        </div>
+
+        <!-- menu list -->
+        <div style="position:absolute;left:90px;top:430px;display:flex;flex-direction:column;gap:6px;width:300px">
+          <div style="position:relative;height:56px;border-radius:30px;display:flex;align-items:center;gap:14px;padding:0 26px;background:linear-gradient(90deg,rgba(63,123,255,.32),rgba(160,107,255,.22));border:1px solid rgba(140,180,255,.5);box-shadow:0 0 28px rgba(80,150,255,.35)" style-hover="box-shadow:0 0 40px rgba(110,170,255,.55)"><span style="width:7px;height:7px;border-radius:50%;background:#cfeaff;box-shadow:0 0 10px #7fd0ff"></span><span style="font:400 19px 'Noto Sans SC';color:#fff;letter-spacing:.06em">开始游戏</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cfe9ff" stroke-width="1.8" style="position:absolute;right:24px"><path d="m9 6 6 6-6 6"/></svg></div>
+          <div style="height:50px;display:flex;align-items:center;gap:15px;padding:0 26px;color:#aab4d8;border-radius:30px" style-hover="color:#fff;background:rgba(120,160,255,.08)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg><span style="font:300 17px 'Noto Sans SC';letter-spacing:.04em">继续游戏</span></div>
+          <div style="height:50px;display:flex;align-items:center;gap:15px;padding:0 26px;color:#aab4d8;border-radius:30px" style-hover="color:#fff;background:rgba(120,160,255,.08)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="2.6"/><circle cx="12" cy="12" r="9" stroke-dasharray="1 4"/></svg><span style="font:300 17px 'Noto Sans SC';letter-spacing:.04em">关卡选择</span></div>
+          <div style="height:50px;display:flex;align-items:center;gap:15px;padding:0 26px;color:#aab4d8;border-radius:30px" style-hover="color:#fff;background:rgba(120,160,255,.08)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M9 5v14"/></svg><span style="font:300 17px 'Noto Sans SC';letter-spacing:.04em">图鉴</span></div>
+          <div style="height:50px;display:flex;align-items:center;gap:15px;padding:0 26px;color:#aab4d8;border-radius:30px" style-hover="color:#fff;background:rgba(120,160,255,.08)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span style="font:300 17px 'Noto Sans SC';letter-spacing:.04em">设置</span></div>
+          <div style="height:50px;display:flex;align-items:center;gap:15px;padding:0 26px;color:#8b95ba;border-radius:30px" style-hover="color:#ff9aa0;background:rgba(255,120,130,.06)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M15 12H9M16 8l4 4-4 4"/></svg><span style="font:300 17px 'Noto Sans SC';letter-spacing:.04em">退出</span></div>
+        </div>
+
+        <div style="position:absolute;left:90px;bottom:34px;font:400 11px 'Space Grotesk';letter-spacing:.1em;color:#5e688f">✦ v1.0.0&nbsp;&nbsp;BUILD 2024.05.20</div>
+        <div style="position:absolute;right:48px;bottom:34px;font:300 14px 'Noto Sans SC';letter-spacing:.18em;color:#8b95ba;animation:qrBlink 2.6s ease-in-out infinite">按任意键开始</div>
+      </div>
+    </div>
+
+    <!-- MENU B -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 B — 居中 · 对撞迸发构图</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(900px 700px at 50% 52%, rgba(80,130,240,.22), transparent 58%),radial-gradient(700px 500px at 50% 50%, rgba(150,100,235,.16), transparent 50%),linear-gradient(180deg,#0a0c18,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsB }}"></div>
+        <!-- converging collision -->
+        <svg viewBox="0 0 1280 720" width="1280" height="720" style="position:absolute;inset:0">
+          <defs>
+            <radialGradient id="coreB" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="#9fe0ff"/><stop offset="1" stop-color="rgba(90,160,255,0)"/></radialGradient>
+            <filter id="blB" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="2"/></filter>
+            <linearGradient id="beamC" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(120,200,255,0)"/><stop offset="1" stop-color="#bfeaff"/></linearGradient>
+            <linearGradient id="beamV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgba(170,130,255,0)"/><stop offset="1" stop-color="#d8c6ff"/></linearGradient>
+          </defs>
+          <path d="M 120 250 C 360 320, 520 350, 632 360" fill="none" stroke="url(#beamC)" stroke-width="2.4" filter="url(#blB)"/>
+          <path d="M 120 470 C 360 400, 520 372, 632 362" fill="none" stroke="url(#beamV)" stroke-width="2.4" filter="url(#blB)"/>
+          <g stroke="#bfeaff" stroke-width="1" opacity=".5" filter="url(#blB)" style="animation:qrFlow 9s linear infinite">
+            <path d="M 648 360 C 820 300, 980 250, 1170 200" fill="none" stroke-dasharray="2 9"/>
+            <path d="M 648 360 C 840 360, 1000 360, 1180 360" fill="none" stroke-dasharray="2 9"/>
+            <path d="M 648 360 C 820 420, 980 470, 1170 520" fill="none" stroke-dasharray="2 9"/>
+            <path d="M 648 360 C 760 250, 840 150, 900 70" fill="none" stroke-dasharray="2 9"/>
+            <path d="M 648 360 C 770 470, 850 580, 920 650" fill="none" stroke-dasharray="2 9"/>
+          </g>
+        </svg>
+        <div style="position:absolute;left:560px;top:288px;width:150px;height:150px;border-radius:50%;background:url(#coreB);background:radial-gradient(circle,#fff,#9fe0ff 38%,rgba(90,160,255,0) 72%);box-shadow:0 0 70px 18px rgba(120,190,255,.6);animation:qrBreathe 4s ease-in-out infinite"></div>
+        <div style="position:absolute;left:600px;top:328px;width:70px;height:70px;border-radius:50%;border:1.5px solid rgba(180,220,255,.6);animation:qrBreathe 3s ease-in-out infinite"></div>
+
+        <!-- top icons compact -->
+        <div style="position:absolute;top:34px;right:40px;display:flex;gap:16px">
+          <div style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7 7 0 0 0 0-2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.6H9.9l-.3 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1c.5.4 1.1.7 1.7 1l.3 2.6h4.2l.3-2.6c.6-.3 1.2-.6 1.7-1l2.3 1 2-3.4Z"/></svg></div>
+          <div style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 9a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1.9-1.1 1.8"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg></div>
+        </div>
+
+        <!-- centered title -->
+        <div style="position:absolute;top:96px;left:0;right:0;text-align:center">
+          <div style="display:inline-flex;flex-direction:column;align-items:center">
+            <svg width="56" height="56" viewBox="0 0 58 58" style="margin-bottom:16px"><circle cx="29" cy="29" r="25" fill="none" stroke="#8fb0ff" stroke-width="1" opacity=".6"/><line x1="9" y1="9" x2="23.5" y2="23.5" stroke="#bcd2ff" stroke-width="1.3"/><line x1="49" y1="9" x2="34.5" y2="23.5" stroke="#bcd2ff" stroke-width="1.3"/><line x1="9" y1="49" x2="23.5" y2="34.5" stroke="#bcd2ff" stroke-width="1.3"/><line x1="49" y1="49" x2="34.5" y2="34.5" stroke="#bcd2ff" stroke-width="1.3"/><circle cx="29" cy="29" r="4.6" fill="#cdeeff"/></svg>
+            <div style="font:200 56px/1 'Noto Sans SC';color:#fff;letter-spacing:.22em;text-shadow:0 0 36px rgba(120,180,255,.5)">量子对撞师</div>
+            <div style="font:300 14px 'Space Grotesk';letter-spacing:.62em;color:#9aa4c8;margin-top:16px">QUANTUM&nbsp;&nbsp;RESONANCE</div>
+          </div>
+        </div>
+
+        <!-- centered menu row -->
+        <div style="position:absolute;bottom:118px;left:0;right:0;display:flex;justify-content:center;gap:14px">
+          <div style="height:54px;padding:0 40px;border-radius:30px;display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,rgba(63,123,255,.4),rgba(160,107,255,.3));border:1px solid rgba(150,190,255,.6);box-shadow:0 0 30px rgba(90,150,255,.4)" style-hover="box-shadow:0 0 46px rgba(120,180,255,.6)"><span style="font:400 19px 'Noto Sans SC';color:#fff;letter-spacing:.1em">开始游戏</span></div>
+          <div style="height:54px;padding:0 30px;border-radius:30px;display:flex;align-items:center;color:#aab4d8;border:1px solid rgba(140,170,230,.28)" style-hover="color:#fff;border-color:rgba(150,190,255,.5)"><span style="font:300 17px 'Noto Sans SC';letter-spacing:.08em">继续游戏</span></div>
+          <div style="height:54px;padding:0 30px;border-radius:30px;display:flex;align-items:center;color:#aab4d8;border:1px solid rgba(140,170,230,.28)" style-hover="color:#fff;border-color:rgba(150,190,255,.5)"><span style="font:300 17px 'Noto Sans SC';letter-spacing:.08em">关卡选择</span></div>
+          <div style="height:54px;padding:0 30px;border-radius:30px;display:flex;align-items:center;color:#aab4d8;border:1px solid rgba(140,170,230,.28)" style-hover="color:#fff;border-color:rgba(150,190,255,.5)"><span style="font:300 17px 'Noto Sans SC';letter-spacing:.08em">图鉴</span></div>
+        </div>
+        <div style="position:absolute;bottom:48px;left:0;right:0;text-align:center;font:300 13px 'Noto Sans SC';letter-spacing:.3em;color:#8b95ba;animation:qrBlink 2.6s ease-in-out infinite">— 按任意键开始 —</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION: LEVEL SELECT ============ -->
+  <div style="margin-bottom:18px;display:flex;align-items:baseline;gap:14px">
+    <div style="font:500 14px 'Space Grotesk';letter-spacing:.22em;color:#aeb8df">02 — 关卡选择</div>
+    <div style="font:300 13px 'Noto Sans SC';color:#5e688f">LEVEL SELECT · 粒子簇射图谱</div>
+  </div>
+  <div style="display:flex;gap:48px;align-items:flex-start;margin-bottom:80px">
+
+    <!-- LEVEL SELECT A -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 A — 簇射星图 · 章节分布于边缘</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(900px 700px at 58% 20%, rgba(70,120,235,.20), transparent 56%),radial-gradient(700px 600px at 78% 32%, rgba(150,100,235,.16), transparent 54%),linear-gradient(180deg,#0a0c18,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsC }}"></div>
+        <!-- filament shower + connectors -->
+        <svg viewBox="0 0 1280 720" width="1280" height="720" style="position:absolute;inset:0">
+          <defs>
+            <linearGradient id="shw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dff2ff"/><stop offset="1" stop-color="rgba(110,160,255,.1)"/></linearGradient>
+            <filter id="blS" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.5"/></filter>
+          </defs>
+          <g fill="none" stroke="url(#shw)" stroke-linecap="round" filter="url(#blS)" opacity=".7">
+            <sc-for list="{{ branchPaths }}" as="p" hint-placeholder-count="7"><path d="{{ p }}" stroke-width="1.2" stroke-dasharray="2 7" style="animation:qrFlow 14s linear infinite"></path></sc-for>
+          </g>
+        </svg>
+        <div style="position:absolute;left:596px;top:6px;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,#fff,#9fe0ff 50%,transparent 72%);box-shadow:0 0 30px 8px rgba(150,210,255,.8)"></div>
+        <!-- nodes -->
+        <sc-for list="{{ nodesA }}" as="n" hint-placeholder-count="30"><div style="{{ n.style }}"></div></sc-for>
+        <!-- active node highlight -->
+        <div style="position:absolute;left:756px;top:404px;width:52px;height:52px;border-radius:50%;border:2px solid transparent;background:conic-gradient(#ff5d8f,#ffd36a,#5fe0c0,#5fd4ff,#a07bff,#ff5d8f);-webkit-mask:radial-gradient(circle,transparent 19px,#000 20px);mask:radial-gradient(circle,transparent 19px,#000 20px);animation:qrSpin 8s linear infinite"></div>
+        <div style="position:absolute;left:773px;top:421px;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle,#fff,#7fd0ff 60%);box-shadow:0 0 22px 5px rgba(120,200,255,.9)"></div>
+        <svg width="20" height="14" viewBox="0 0 20 14" style="position:absolute;left:772px;top:378px;animation:qrFloat 2.4s ease-in-out infinite"><path d="M10 13 2 2h16Z" fill="#9fd0ff"/></svg>
+
+        <!-- chapter labels -->
+        <div style="position:absolute;left:96px;top:470px;display:flex;align-items:center;gap:14px"><div style="width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#e6dcff,#9a6bff 60%,transparent 74%);box-shadow:0 0 20px rgba(150,110,255,.6)"></div><div><div style="font:300 24px 'Space Grotesk';color:#e8ecff">I</div><div style="font:300 14px 'Noto Sans SC';color:#aab4d8">初始粒子</div><div style="font:400 11px 'Space Grotesk';color:#6cd6ff">100%</div></div></div>
+        <div style="position:absolute;left:430px;top:600px;display:flex;align-items:center;gap:14px"><div style="width:30px;height:30px;border-radius:50%;background:radial-gradient(circle,#dff4ff,#3aa6ff 60%,transparent 74%);box-shadow:0 0 18px rgba(90,180,255,.6)"></div><div><div style="font:300 22px 'Space Grotesk';color:#e8ecff">II</div><div style="font:300 14px 'Noto Sans SC';color:#aab4d8">对撞初现</div><div style="font:400 11px 'Space Grotesk';color:#6cd6ff">75%</div></div></div>
+        <div style="position:absolute;left:700px;top:638px;display:flex;align-items:center;gap:14px"><div style="width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#fff,#3aa6ff 55%,transparent 74%);box-shadow:0 0 26px rgba(90,180,255,.7)"></div><div><div style="font:300 22px 'Space Grotesk';color:#e8ecff">III</div><div style="font:300 14px 'Noto Sans SC';color:#aab4d8">量子相干</div><div style="font:400 11px 'Space Grotesk';color:#6cd6ff">40%</div></div></div>
+        <div style="position:absolute;right:96px;top:470px;display:flex;align-items:center;gap:14px;flex-direction:row-reverse;text-align:right"><div style="width:30px;height:30px;border-radius:50%;background:rgba(150,120,220,.25);border:1px solid rgba(170,140,240,.4)"></div><div><div style="font:300 22px 'Space Grotesk';color:#aab4d8">IV</div><div style="font:300 14px 'Noto Sans SC';color:#8b95ba">纠缠延展</div><div style="font:400 11px 'Space Grotesk';color:#6e7799">0%</div></div></div>
+
+        <!-- header -->
+        <div style="position:absolute;left:54px;top:40px;display:flex;align-items:center;gap:16px">
+          <svg width="44" height="44" viewBox="0 0 58 58"><circle cx="29" cy="29" r="25" fill="none" stroke="#8fb0ff" stroke-width="1" opacity=".55"/><line x1="9" y1="9" x2="23.5" y2="23.5" stroke="#bcd2ff" stroke-width="1.2"/><line x1="49" y1="9" x2="34.5" y2="23.5" stroke="#bcd2ff" stroke-width="1.2"/><line x1="9" y1="49" x2="23.5" y2="34.5" stroke="#bcd2ff" stroke-width="1.2"/><line x1="49" y1="49" x2="34.5" y2="34.5" stroke="#bcd2ff" stroke-width="1.2"/><circle cx="29" cy="29" r="4" fill="#cdeeff"/></svg>
+          <div><div style="font:300 30px/1 'Noto Sans SC';color:#fff;letter-spacing:.06em">关卡选择</div><div style="font:300 13px 'Noto Sans SC';color:#8b95ba;margin-top:5px;letter-spacing:.1em">粒子簇射图谱</div></div>
+        </div>
+        <!-- progress -->
+        <div style="position:absolute;left:56px;top:138px;width:200px"><div style="font:300 12px 'Noto Sans SC';color:#8b95ba;letter-spacing:.08em">总体进度</div><div style="font:300 30px 'Space Grotesk';color:#cfe9ff;margin:2px 0 8px">37%</div><div style="height:4px;border-radius:3px;background:rgba(140,160,210,.2)"><div style="height:100%;width:37%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff);box-shadow:0 0 12px rgba(90,170,255,.6)"></div></div></div>
+        <!-- top-right nav -->
+        <div style="position:absolute;top:40px;right:46px;display:flex;gap:24px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="m15 9-4 1.5L9.5 15l4-1.5L15 9Z" fill="currentColor"/></svg></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">星图</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4h12v3a6 6 0 0 1-12 0V4ZM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 18h6M10 14v4M14 14v4"/></svg></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">成就</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7 7 0 0 0 0-2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.6H9.9l-.3 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1c.5.4 1.1.7 1.7 1l.3 2.6h4.2l.3-2.6c.6-.3 1.2-.6 1.7-1l2.3 1 2-3.4Z"/></svg></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">设置</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.5 9a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1.9-1.1 1.8"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">帮助</div></div>
+        </div>
+
+        <!-- back -->
+        <div style="position:absolute;left:54px;bottom:40px;display:flex;align-items:center;gap:12px" style-hover="opacity:.8"><div style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m14 6-6 6 6 6"/></svg></div><span style="font:300 14px 'Noto Sans SC';color:#9aa4c8">返回</span></div>
+
+        <!-- level info card -->
+        <div style="position:absolute;right:48px;bottom:42px;width:392px;border-radius:14px;padding:24px 26px;background:linear-gradient(160deg,rgba(28,34,62,.82),rgba(16,20,40,.72));border:1px solid rgba(130,160,230,.28);backdrop-filter:blur(10px);box-shadow:0 18px 50px rgba(0,0,0,.5)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="display:flex;align-items:baseline;gap:14px"><span style="font:300 30px 'Space Grotesk';color:#cfe9ff">2-4</span><span style="font:400 21px 'Noto Sans SC';color:#fff;letter-spacing:.04em">湮灭之门</span></div>
+            <svg width="58" height="42" viewBox="0 0 58 42"><circle cx="29" cy="21" r="2.5" fill="#9fd0ff"/><ellipse cx="29" cy="21" rx="22" ry="9" fill="none" stroke="#6aa8ff" stroke-width="1" opacity=".6"/><ellipse cx="29" cy="21" rx="22" ry="9" fill="none" stroke="#a07bff" stroke-width="1" opacity=".5" transform="rotate(60 29 21)"/><ellipse cx="29" cy="21" rx="22" ry="9" fill="none" stroke="#5fe0c0" stroke-width="1" opacity=".4" transform="rotate(-60 29 21)"/><circle cx="51" cy="21" r="2" fill="#d8c6ff"/><circle cx="22" cy="11" r="1.6" fill="#9fd0ff"/></svg>
+          </div>
+          <div style="font:300 14px/1.7 'Noto Sans SC';color:#9aa4c8;margin-top:12px">让正负电子在此相遇,湮灭为光,再生成新的物质。</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#5fd4ff"><path d="M12 2 9 9l-7 .5 5.5 4.5L5.5 21 12 17l6.5 4-1.5-7L22 9.5 15 9Z"/></svg><span style="font:300 13px 'Noto Sans SC';color:#9aa4c8">完成度</span><span style="color:#ffd36a;font:300 15px 'Space Grotesk';letter-spacing:.1em">★ ★ ★</span></div>
+          <div style="margin-top:20px;height:50px;border-radius:28px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,#3a78ff,#9a6bff);box-shadow:0 0 26px rgba(90,150,255,.45)" style-hover="box-shadow:0 0 40px rgba(110,170,255,.65)"><span style="font:400 17px 'Noto Sans SC';color:#fff;letter-spacing:.16em">进入关卡</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL SELECT B -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 B — 轨道星系 · 章节为同心轨道</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(900px 900px at 42% 54%, rgba(70,120,235,.20), transparent 56%),radial-gradient(700px 600px at 42% 54%, rgba(150,100,235,.14), transparent 50%),linear-gradient(180deg,#0a0c18,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsB }}"></div>
+        <!-- orbital system centered-left -->
+        <div style="position:absolute;left:-160px;top:-160px;width:1100px;height:1100px;border-radius:50%;border:1px dashed rgba(120,150,220,.16);animation:qrSpin 120s linear infinite"></div>
+        <div style="position:absolute;left:-40px;top:-40px;width:860px;height:860px;border-radius:50%;border:1px solid rgba(120,150,220,.13);animation:qrSpinR 90s linear infinite"></div>
+        <div style="position:absolute;left:80px;top:80px;width:600px;height:600px;border-radius:50%;border:1px dashed rgba(120,150,220,.18)"></div>
+        <div style="position:absolute;left:210px;top:210px;width:340px;height:340px;border-radius:50%;border:1px solid rgba(150,120,255,.2)"></div>
+        <!-- core -->
+        <div style="position:absolute;left:340px;top:340px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,#fff,#7fd0ff 42%,rgba(90,160,255,0) 72%);box-shadow:0 0 60px 14px rgba(120,190,255,.6);animation:qrBreathe 4s ease-in-out infinite"></div>
+        <div style="position:absolute;left:360px;top:160px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,#e6dcff,#9a6bff 60%,transparent);box-shadow:0 0 16px #9a6bff"></div><div style="font:300 12px 'Noto Sans SC';color:#cdd8f6">I 初始粒子</div></div>
+        <div style="position:absolute;left:148px;top:430px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,#dff4ff,#3aa6ff 60%,transparent);box-shadow:0 0 16px #3aa6ff"></div><div style="font:300 12px 'Noto Sans SC';color:#cdd8f6">II 对撞初现</div></div>
+        <div style="position:absolute;left:560px;top:480px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:24px;height:24px;border-radius:50%;background:radial-gradient(circle,#fff,#3aa6ff 55%,transparent);box-shadow:0 0 22px #3aa6ff"></div><div style="font:300 12px 'Noto Sans SC';color:#cdd8f6">III 量子相干</div></div>
+        <div style="position:absolute;left:610px;top:110px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:18px;height:18px;border-radius:50%;background:rgba(150,120,220,.3);border:1px solid rgba(170,140,240,.5)"></div><div style="font:300 12px 'Noto Sans SC';color:#8b95ba">IV 纠缠延展</div></div>
+        <!-- scattered small level nodes on orbits -->
+        <div style="position:absolute;left:470px;top:250px;width:10px;height:10px;border-radius:50%;background:#9fd0ff;box-shadow:0 0 12px #6aa8ff"></div>
+        <div style="position:absolute;left:250px;top:300px;width:9px;height:9px;border-radius:50%;background:#9fd0ff;box-shadow:0 0 10px #6aa8ff"></div>
+        <div style="position:absolute;left:300px;top:520px;width:9px;height:9px;border-radius:50%;background:#9fd0ff;box-shadow:0 0 10px #6aa8ff"></div>
+        <div style="position:absolute;left:520px;top:340px;width:14px;height:14px;border-radius:50%;border:2px solid #ffd36a;box-shadow:0 0 16px rgba(255,210,100,.5);animation:qrBreathe 3s ease-in-out infinite"></div>
+        <div style="position:absolute;left:160px;top:250px;width:8px;height:8px;border-radius:50%;background:rgba(160,140,210,.4)"></div>
+
+        <!-- header -->
+        <div style="position:absolute;left:54px;top:40px"><div style="font:300 30px/1 'Noto Sans SC';color:#fff;letter-spacing:.06em">关卡选择</div><div style="font:300 13px 'Noto Sans SC';color:#8b95ba;margin-top:5px">轨道星系视图</div></div>
+        <div style="position:absolute;left:56px;bottom:48px;width:200px"><div style="font:300 12px 'Noto Sans SC';color:#8b95ba">总体进度</div><div style="font:300 28px 'Space Grotesk';color:#cfe9ff;margin:2px 0 8px">37%</div><div style="height:4px;border-radius:3px;background:rgba(140,160,210,.2)"><div style="height:100%;width:37%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff)"></div></div></div>
+
+        <!-- right info panel (vertical) -->
+        <div style="position:absolute;right:48px;top:130px;width:384px;border-radius:14px;padding:26px;background:linear-gradient(160deg,rgba(28,34,62,.8),rgba(16,20,40,.7));border:1px solid rgba(130,160,230,.26);backdrop-filter:blur(10px);box-shadow:0 18px 50px rgba(0,0,0,.5)">
+          <div style="font:300 12px 'Space Grotesk';letter-spacing:.2em;color:#6cd6ff">CHAPTER III · 量子相干</div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-top:14px"><span style="font:300 34px 'Space Grotesk';color:#cfe9ff">3-2</span><span style="font:400 22px 'Noto Sans SC';color:#fff">相干之桥</span></div>
+          <div style="margin-top:18px;border-radius:10px;height:150px;background:radial-gradient(circle at 30% 40%,rgba(90,160,255,.18),transparent),#0c1022;border:1px solid rgba(120,150,220,.18);position:relative;overflow:hidden">
+            <svg viewBox="0 0 340 150" width="100%" height="100%"><path d="M30 40 Q90 75 170 75" stroke="#eaf6ff" stroke-width="1.4" fill="none"/><path d="M30 110 Q90 75 170 75" stroke="#d8c6ff" stroke-width="1.4" fill="none"/><path d="M170 75 q12 -10 24 0 t24 0 t24 0 t24 0" stroke="#5fd4ff" stroke-width="1.6" fill="none"/><path d="M290 75 Q260 40 200 38" stroke="#9fd0ff" stroke-width="1.4" fill="none"/><circle cx="170" cy="75" r="4" fill="#fff"/><circle cx="290" cy="75" r="4" fill="#fff"/></svg>
+          </div>
+          <div style="font:300 13.5px/1.7 'Noto Sans SC';color:#9aa4c8;margin-top:16px">两条相干路径在此交汇,寻找让振幅相长的连法。</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px"><span style="font:300 13px 'Noto Sans SC';color:#9aa4c8">完成度</span><span style="color:#ffd36a;font:300 15px 'Space Grotesk'">★ ★ ☆</span><span style="margin-left:auto;font:300 12px 'Noto Sans SC';color:#6e7799">最佳步数 6</span></div>
+          <div style="margin-top:20px;height:50px;border-radius:28px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,#3a78ff,#9a6bff);box-shadow:0 0 26px rgba(90,150,255,.45)" style-hover="box-shadow:0 0 40px rgba(110,170,255,.65)"><span style="font:400 17px 'Noto Sans SC';color:#fff;letter-spacing:.16em">进入关卡</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION: PUZZLE ============ -->
+  <div style="margin-bottom:18px;display:flex;align-items:baseline;gap:14px">
+    <div style="font:500 14px 'Space Grotesk';letter-spacing:.22em;color:#aeb8df">03 — 解密关卡</div>
+    <div style="font:300 13px 'Noto Sans SC';color:#5e688f">PUZZLE · 拖拽粒子连成正确的费曼图</div>
+  </div>
+  <div style="display:flex;gap:48px;align-items:flex-start;margin-bottom:80px">
+
+    <!-- PUZZLE A: e+e- annihilation -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 A — e⁺e⁻ 湮灭 → μ⁺μ⁻ · 完成态</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(1000px 700px at 50% 44%, rgba(60,110,225,.16), transparent 56%),radial-gradient(700px 600px at 70% 30%, rgba(150,100,235,.12), transparent 54%),linear-gradient(180deg,#090b15,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsA }}"></div>
+
+        <!-- diagram -->
+        <svg viewBox="0 0 1280 720" width="1280" height="720" style="position:absolute;inset:0">
+          <defs>
+            <filter id="glowP" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter>
+            <linearGradient id="phG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5fd4ff"/><stop offset="1" stop-color="#5fe0e0"/></linearGradient>
+          </defs>
+          <!-- fermion legs -->
+          <path d="M150 232 Q310 300 470 372" fill="none" stroke="#eaf6ff" stroke-width="2.2" filter="url(#glowP)" opacity=".85"/>
+          <path d="M150 232 Q310 300 470 372" fill="none" stroke="#eaf6ff" stroke-width="1.6"/>
+          <path d="M150 512 Q310 444 470 372" fill="none" stroke="#c6b2ff" stroke-width="2.2" filter="url(#glowP)" opacity=".85"/>
+          <path d="M150 512 Q310 444 470 372" fill="none" stroke="#c6b2ff" stroke-width="1.6"/>
+          <path d="M810 372 Q970 300 1130 232" fill="none" stroke="#5fe0e6" stroke-width="2.2" filter="url(#glowP)" opacity=".85"/>
+          <path d="M810 372 Q970 300 1130 232" fill="none" stroke="#5fe0e6" stroke-width="1.6"/>
+          <path d="M810 372 Q970 444 1130 512" fill="none" stroke="#eaf6ff" stroke-width="2.2" filter="url(#glowP)" opacity=".85"/>
+          <path d="M810 372 Q970 444 1130 512" fill="none" stroke="#eaf6ff" stroke-width="1.6"/>
+          <!-- photon -->
+          <path d="{{ photonA }}" fill="none" stroke="url(#phG)" stroke-width="3.4" filter="url(#glowP)" opacity=".7"/>
+          <path d="{{ photonA }}" fill="none" stroke="#aef3ff" stroke-width="1.8" stroke-dasharray="120 600" style="animation:qrFlow 6s linear infinite"/>
+          <path d="{{ photonA }}" fill="none" stroke="#7fe6ee" stroke-width="1.6"/>
+          <!-- arrows -->
+          <g transform="translate(312,302) rotate(24)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#eaf6ff"/></g>
+          <g transform="translate(312,442) rotate(-24)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#c6b2ff"/></g>
+          <g transform="translate(968,302) rotate(-24)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#5fe0e6"/></g>
+          <g transform="translate(968,442) rotate(24)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#eaf6ff"/></g>
+          <!-- vertices -->
+          <circle cx="470" cy="372" r="16" fill="none" stroke="rgba(150,200,255,.4)" stroke-width="1.4" style="animation:qrBreathe 4s ease-in-out infinite"/>
+          <circle cx="470" cy="372" r="7" fill="#fff" filter="url(#glowP)"/>
+          <circle cx="470" cy="372" r="4.5" fill="#fff"/>
+          <circle cx="810" cy="372" r="16" fill="none" stroke="rgba(150,200,255,.4)" stroke-width="1.4" style="animation:qrBreathe 4s ease-in-out .6s infinite"/>
+          <circle cx="810" cy="372" r="7" fill="#fff" filter="url(#glowP)"/>
+          <circle cx="810" cy="372" r="4.5" fill="#fff"/>
+          <!-- endpoint dots -->
+          <circle cx="150" cy="232" r="6" fill="#eaf6ff" filter="url(#glowP)"/><circle cx="150" cy="232" r="3.5" fill="#fff"/>
+          <circle cx="150" cy="512" r="6" fill="#c6b2ff" filter="url(#glowP)"/><circle cx="150" cy="512" r="3.5" fill="#e6dcff"/>
+          <circle cx="1130" cy="232" r="6" fill="#5fe0e6" filter="url(#glowP)"/><circle cx="1130" cy="232" r="3.5" fill="#bdf6f8"/>
+          <circle cx="1130" cy="512" r="6" fill="#eaf6ff" filter="url(#glowP)"/><circle cx="1130" cy="512" r="3.5" fill="#fff"/>
+        </svg>
+        <!-- particle labels -->
+        <div style="position:absolute;left:104px;top:200px;font:300 26px 'Space Grotesk';color:#eaf6ff">e<sup style="font-size:.6em">−</sup></div>
+        <div style="position:absolute;left:104px;top:486px;font:300 26px 'Space Grotesk';color:#c6b2ff">e<sup style="font-size:.6em">+</sup></div>
+        <div style="position:absolute;right:104px;top:200px;font:300 26px 'Space Grotesk';color:#7fe6ee">μ<sup style="font-size:.6em">−</sup></div>
+        <div style="position:absolute;right:104px;top:486px;font:300 26px 'Space Grotesk';color:#eaf6ff">μ<sup style="font-size:.6em">+</sup></div>
+        <div style="position:absolute;left:600px;top:332px;font:300 17px 'Space Grotesk';color:#7fe6ee;font-style:italic">γ</div>
+
+        <!-- top bar -->
+        <div style="position:absolute;top:34px;left:54px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="font:400 13px 'Space Grotesk';letter-spacing:.12em;color:#6cd6ff">QED · 02</span><span style="width:5px;height:5px;border-radius:50%;background:#3a4674"></span><span style="font:400 22px 'Noto Sans SC';color:#fff;letter-spacing:.04em">湮灭之门</span></div>
+          <div style="font:300 14px 'Noto Sans SC';color:#8b95ba;margin-top:7px;letter-spacing:.04em">让正负电子湮灭,重生为一对 μ 子。</div>
+        </div>
+        <div style="position:absolute;top:34px;right:44px;display:flex;gap:14px">
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,210,120,.4);display:flex;align-items:center;justify-content:center;color:#ffd980;box-shadow:0 0 16px rgba(255,210,100,.25)" style-hover="box-shadow:0 0 24px rgba(255,210,100,.45)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 21h4M12 2a6 6 0 0 1 4 10.5c-.6.6-1 1.3-1 2.5H9c0-1.2-.4-1.9-1-2.5A6 6 0 0 1 12 2Z"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></div>
+        </div>
+
+        <!-- bottom tray -->
+        <div style="position:absolute;left:54px;right:54px;bottom:34px;height:118px;border-radius:16px;background:linear-gradient(180deg,rgba(22,28,52,.72),rgba(13,17,34,.78));border:1px solid rgba(120,150,220,.22);backdrop-filter:blur(10px);display:flex;align-items:center;padding:0 26px;gap:26px;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font:300 11px 'Noto Sans SC';letter-spacing:.16em;color:#7d86ad">可用粒子</span>
+            <div style="display:flex;gap:16px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.42"><div style="width:54px;height:54px;border-radius:13px;background:rgba(20,28,54,.5);border:1px solid rgba(120,160,240,.25);display:flex;align-items:center;justify-content:center;position:relative"><span style="font:400 19px 'Space Grotesk';color:#eaf6ff">e<sup style="font-size:.6em">−</sup></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5fe0a0" stroke-width="3" style="position:absolute;right:5px;bottom:5px"><path d="m5 13 4 4L19 7"/></svg></div><span style="font:300 10px 'Noto Sans SC';color:#7d86ad">电子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.42"><div style="width:54px;height:54px;border-radius:13px;background:rgba(20,28,54,.5);border:1px solid rgba(120,160,240,.25);display:flex;align-items:center;justify-content:center;position:relative"><span style="font:400 19px 'Space Grotesk';color:#c6b2ff">e<sup style="font-size:.6em">+</sup></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5fe0a0" stroke-width="3" style="position:absolute;right:5px;bottom:5px"><path d="m5 13 4 4L19 7"/></svg></div><span style="font:300 10px 'Noto Sans SC';color:#7d86ad">正电子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.42"><div style="width:54px;height:54px;border-radius:13px;background:rgba(20,28,54,.5);border:1px solid rgba(120,160,240,.25);display:flex;align-items:center;justify-content:center;position:relative"><span style="font:400 19px 'Space Grotesk';color:#7fe6ee">γ</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5fe0a0" stroke-width="3" style="position:absolute;right:5px;bottom:5px"><path d="m5 13 4 4L19 7"/></svg></div><span style="font:300 10px 'Noto Sans SC';color:#7d86ad">光子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.42"><div style="width:54px;height:54px;border-radius:13px;background:rgba(20,28,54,.5);border:1px solid rgba(120,160,240,.25);display:flex;align-items:center;justify-content:center;position:relative"><span style="font:400 17px 'Space Grotesk';color:#7fe6ee">μ<sup style="font-size:.6em">−</sup></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5fe0a0" stroke-width="3" style="position:absolute;right:5px;bottom:5px"><path d="m5 13 4 4L19 7"/></svg></div><span style="font:300 10px 'Noto Sans SC';color:#7d86ad">μ子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.42"><div style="width:54px;height:54px;border-radius:13px;background:rgba(20,28,54,.5);border:1px solid rgba(120,160,240,.25);display:flex;align-items:center;justify-content:center;position:relative"><span style="font:400 17px 'Space Grotesk';color:#c6b2ff">μ<sup style="font-size:.6em">+</sup></span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5fe0a0" stroke-width="3" style="position:absolute;right:5px;bottom:5px"><path d="m5 13 4 4L19 7"/></svg></div><span style="font:300 10px 'Noto Sans SC';color:#7d86ad">反μ子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:grab" style-hover="transform:translateY(-3px)"><div style="width:54px;height:54px;border-radius:13px;background:linear-gradient(160deg,rgba(40,58,108,.6),rgba(20,28,54,.5));border:1px solid rgba(120,160,240,.4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(80,150,255,.25)"><span style="font:400 17px 'Space Grotesk';color:#bcd0ff;font-style:italic">ν<sub style="font-size:.55em">e</sub></span></div><span style="font:300 10px 'Noto Sans SC';color:#9aa4c8">中微子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:grab" style-hover="transform:translateY(-3px)"><div style="width:54px;height:54px;border-radius:13px;background:linear-gradient(160deg,rgba(40,58,108,.6),rgba(20,28,54,.5));border:1px solid rgba(120,160,240,.4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(80,150,255,.25)"><span style="font:400 19px 'Space Grotesk';color:#ffcaa0">q</span></div><span style="font:300 10px 'Noto Sans SC';color:#9aa4c8">夸克</span></div>
+            </div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:22px">
+            <div style="text-align:right"><div style="font:300 11px 'Noto Sans SC';color:#7d86ad">顶点 / 步数</div><div style="font:300 20px 'Space Grotesk';color:#cfe9ff">2 · 4</div></div>
+            <div style="height:56px;padding:0 38px;border-radius:30px;display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,#2bbf8f,#3a9aff);box-shadow:0 0 30px rgba(60,200,150,.4)" style-hover="box-shadow:0 0 46px rgba(70,210,160,.6)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="m5 13 4 4L19 7"/></svg><span style="font:400 18px 'Noto Sans SC';color:#fff;letter-spacing:.1em">对撞验证</span></div>
+          </div>
+        </div>
+        <!-- success banner -->
+        <div style="position:absolute;left:50%;top:120px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:9px 22px;border-radius:24px;background:rgba(40,190,140,.14);border:1px solid rgba(70,210,160,.5);box-shadow:0 0 24px rgba(60,200,150,.3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5fe0a0" stroke-width="2.4"><path d="m5 13 4 4L19 7"/></svg><span style="font:300 14px 'Noto Sans SC';color:#aef3d0;letter-spacing:.06em">费曼图守恒成立 · 电荷与轻子数平衡</span></div>
+      </div>
+    </div>
+
+    <!-- PUZZLE B: Compton scattering + rule sidebar -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 B — 康普顿散射 γe⁻→γe⁻ · 规则速查侧栏</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(1000px 700px at 44% 46%, rgba(60,110,225,.16), transparent 56%),linear-gradient(180deg,#090b15,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsC }}"></div>
+
+        <svg viewBox="0 0 1280 720" width="1280" height="720" style="position:absolute;inset:0">
+          <defs>
+            <filter id="glowB" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter>
+            <linearGradient id="phB" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5fd4ff"/><stop offset="1" stop-color="#5fe0e0"/></linearGradient>
+          </defs>
+          <!-- incoming electron -->
+          <path d="M150 540 Q300 490 442 422" fill="none" stroke="#eaf6ff" stroke-width="2.2" filter="url(#glowB)" opacity=".85"/>
+          <path d="M150 540 Q300 490 442 422" fill="none" stroke="#eaf6ff" stroke-width="1.6"/>
+          <!-- internal electron (virtual) -->
+          <path d="M450 414 L818 306" fill="none" stroke="#cfe2ff" stroke-width="2" filter="url(#glowB)" opacity=".6"/>
+          <path d="M450 414 L818 306" fill="none" stroke="#cfe2ff" stroke-width="1.5" stroke-dasharray="1 6"/>
+          <!-- outgoing electron -->
+          <path d="M826 300 Q980 360 1116 430" fill="none" stroke="#eaf6ff" stroke-width="2.2" filter="url(#glowB)" opacity=".85"/>
+          <path d="M826 300 Q980 360 1116 430" fill="none" stroke="#eaf6ff" stroke-width="1.6"/>
+          <!-- incoming photon -->
+          <path d="{{ photonCin }}" fill="none" stroke="url(#phB)" stroke-width="3.2" filter="url(#glowB)" opacity=".7"/>
+          <path d="{{ photonCin }}" fill="none" stroke="#aef3ff" stroke-width="1.7"/>
+          <!-- outgoing photon -->
+          <path d="{{ photonCout }}" fill="none" stroke="url(#phB)" stroke-width="3.2" filter="url(#glowB)" opacity=".7"/>
+          <path d="{{ photonCout }}" fill="none" stroke="#aef3ff" stroke-width="1.7"/>
+          <!-- arrows -->
+          <g transform="translate(300,488) rotate(-26)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#eaf6ff"/></g>
+          <g transform="translate(630,360) rotate(-16)"><path d="M-5 -4 L5 0 L-5 4 Z" fill="#cfe2ff"/></g>
+          <g transform="translate(980,362) rotate(26)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#eaf6ff"/></g>
+          <!-- vertices -->
+          <circle cx="446" cy="418" r="14" fill="none" stroke="rgba(150,200,255,.4)" stroke-width="1.4" style="animation:qrBreathe 4s ease-in-out infinite"/>
+          <circle cx="446" cy="418" r="6.5" fill="#fff" filter="url(#glowB)"/><circle cx="446" cy="418" r="4" fill="#fff"/>
+          <circle cx="822" cy="302" r="14" fill="none" stroke="rgba(150,200,255,.4)" stroke-width="1.4" style="animation:qrBreathe 4s ease-in-out .6s infinite"/>
+          <circle cx="822" cy="302" r="6.5" fill="#fff" filter="url(#glowB)"/><circle cx="822" cy="302" r="4" fill="#fff"/>
+          <!-- endpoints -->
+          <circle cx="168" cy="300" r="6" fill="#5fe0e6" filter="url(#glowB)"/><circle cx="168" cy="300" r="3.5" fill="#bdf6f8"/>
+          <circle cx="150" cy="540" r="6" fill="#eaf6ff" filter="url(#glowB)"/><circle cx="150" cy="540" r="3.5" fill="#fff"/>
+          <circle cx="1116" cy="184" r="6" fill="#5fe0e6" filter="url(#glowB)"/><circle cx="1116" cy="184" r="3.5" fill="#bdf6f8"/>
+          <circle cx="1116" cy="430" r="6" fill="#eaf6ff" filter="url(#glowB)"/><circle cx="1116" cy="430" r="3.5" fill="#fff"/>
+        </svg>
+        <div style="position:absolute;left:128px;top:268px;font:300 24px 'Space Grotesk';color:#7fe6ee;font-style:italic">γ</div>
+        <div style="position:absolute;left:120px;top:520px;font:300 24px 'Space Grotesk';color:#eaf6ff">e<sup style="font-size:.6em">−</sup></div>
+        <div style="position:absolute;left:1088px;top:152px;font:300 24px 'Space Grotesk';color:#7fe6ee;font-style:italic">γ′</div>
+        <div style="position:absolute;left:1086px;top:404px;font:300 24px 'Space Grotesk';color:#eaf6ff">e<sup style="font-size:.6em">−</sup></div>
+        <div style="position:absolute;left:600px;top:332px;font:300 14px 'Space Grotesk';color:#9fc0ff;font-style:italic">e*</div>
+
+        <!-- top bar -->
+        <div style="position:absolute;top:34px;left:54px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="font:400 13px 'Space Grotesk';letter-spacing:.12em;color:#6cd6ff">QED · 05</span><span style="width:5px;height:5px;border-radius:50%;background:#3a4674"></span><span style="font:400 22px 'Noto Sans SC';color:#fff">散射回响</span></div>
+          <div style="font:300 14px 'Noto Sans SC';color:#8b95ba;margin-top:7px">让光子被电子散射,电子吸收再发射一颗新光子。</div>
+        </div>
+        <div style="position:absolute;top:34px;right:44px;display:flex;gap:14px">
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,210,120,.4);display:flex;align-items:center;justify-content:center;color:#ffd980"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 21h4M12 2a6 6 0 0 1 4 10.5c-.6.6-1 1.3-1 2.5H9c0-1.2-.4-1.9-1-2.5A6 6 0 0 1 12 2Z"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></div>
+        </div>
+
+        <!-- rule quick-reference sidebar -->
+        <div style="position:absolute;left:54px;top:150px;width:236px;border-radius:14px;padding:18px 18px;background:linear-gradient(180deg,rgba(22,28,52,.78),rgba(13,17,34,.8));border:1px solid rgba(120,150,220,.22);backdrop-filter:blur(8px)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6cd6ff" stroke-width="1.6"><path d="M4 19V5l8 4 8-4v14l-8-4Z"/></svg><span style="font:400 13px 'Noto Sans SC';color:#cfe9ff;letter-spacing:.1em">费曼图规则</span></div>
+          <div style="display:flex;flex-direction:column;gap:13px">
+            <div style="display:flex;gap:11px"><span style="font:400 12px 'Space Grotesk';color:#6cd6ff;flex:none;margin-top:1px">01</span><span style="font:300 12.5px/1.55 'Noto Sans SC';color:#9aa4c8">每个顶点恰好连接 <b style="color:#cfe9ff;font-weight:400">3 条线</b></span></div>
+            <div style="display:flex;gap:11px"><span style="font:400 12px 'Space Grotesk';color:#6cd6ff;flex:none;margin-top:1px">02</span><span style="font:300 12.5px/1.55 'Noto Sans SC';color:#9aa4c8"><b style="color:#cfe9ff;font-weight:400">电荷</b>在顶点处守恒</span></div>
+            <div style="display:flex;gap:11px"><span style="font:400 12px 'Space Grotesk';color:#6cd6ff;flex:none;margin-top:1px">03</span><span style="font:300 12.5px/1.55 'Noto Sans SC';color:#9aa4c8"><b style="color:#cfe9ff;font-weight:400">轻子数</b>整体守恒</span></div>
+            <div style="display:flex;gap:11px"><span style="font:400 12px 'Space Grotesk';color:#6cd6ff;flex:none;margin-top:1px">04</span><span style="font:300 12.5px/1.55 'Noto Sans SC';color:#9aa4c8">光子只连 <b style="color:#cfe9ff;font-weight:400">费米子-反费米子</b></span></div>
+          </div>
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(120,150,220,.16);display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;gap:10px"><svg width="30" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#eaf6ff" stroke-width="1.6"/><path d="M14 1 18 5 14 9Z" fill="#eaf6ff"/></svg><span style="font:300 11px 'Noto Sans SC';color:#9aa4c8">费米子</span></div>
+            <div style="display:flex;align-items:center;gap:10px"><svg width="30" height="10"><path d="M0 5 q3 -4 6 0 t6 0 t6 0 t6 0 t6 0" stroke="#7fe6ee" stroke-width="1.4" fill="none"/></svg><span style="font:300 11px 'Noto Sans SC';color:#9aa4c8">光子 γ</span></div>
+          </div>
+        </div>
+
+        <!-- bottom tray (compact) -->
+        <div style="position:absolute;left:310px;right:54px;bottom:34px;height:104px;border-radius:16px;background:linear-gradient(180deg,rgba(22,28,52,.72),rgba(13,17,34,.78));border:1px solid rgba(120,150,220,.22);backdrop-filter:blur(10px);display:flex;align-items:center;padding:0 24px;gap:20px">
+          <span style="font:300 11px 'Noto Sans SC';letter-spacing:.16em;color:#7d86ad;writing-mode:vertical-rl">粒子托盘</span>
+          <div style="display:flex;gap:13px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:grab" style-hover="transform:translateY(-3px)"><div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(160deg,rgba(40,58,108,.6),rgba(20,28,54,.5));border:1px solid rgba(120,160,240,.4);display:flex;align-items:center;justify-content:center"><span style="font:400 17px 'Space Grotesk';color:#eaf6ff">e<sup style="font-size:.6em">−</sup></span></div><span style="font:300 10px 'Noto Sans SC';color:#9aa4c8">电子</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:grab" style-hover="transform:translateY(-3px)"><div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(160deg,rgba(40,58,108,.6),rgba(20,28,54,.5));border:1px solid rgba(120,160,240,.4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(95,224,238,.3)"><span style="font:400 17px 'Space Grotesk';color:#7fe6ee">γ</span></div><span style="font:300 10px 'Noto Sans SC';color:#9aa4c8">光子</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:grab" style-hover="transform:translateY(-3px)"><div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(160deg,rgba(40,58,108,.6),rgba(20,28,54,.5));border:1px solid rgba(120,160,240,.4);display:flex;align-items:center;justify-content:center"><span style="font:400 17px 'Space Grotesk';color:#c6b2ff">e<sup style="font-size:.6em">+</sup></span></div><span style="font:300 10px 'Noto Sans SC';color:#9aa4c8">正电子</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:grab" style-hover="transform:translateY(-3px)"><div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(160deg,rgba(40,58,108,.6),rgba(20,28,54,.5));border:1px solid rgba(120,160,240,.4);display:flex;align-items:center;justify-content:center"><span style="font:400 15px 'Space Grotesk';color:#9fd6ff;font-style:italic">Z<sup style="font-size:.55em">0</sup></span></div><span style="font:300 10px 'Noto Sans SC';color:#9aa4c8">Z玻色子</span></div>
+          </div>
+          <div style="margin-left:auto;height:52px;padding:0 34px;border-radius:28px;display:flex;align-items:center;gap:11px;background:linear-gradient(90deg,#3a78ff,#9a6bff);box-shadow:0 0 26px rgba(90,150,255,.4)" style-hover="box-shadow:0 0 40px rgba(110,170,255,.6)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="m5 13 4 4L19 7"/></svg><span style="font:400 17px 'Noto Sans SC';color:#fff;letter-spacing:.1em">对撞验证</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUZZLE C: mid-drag interaction state -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 C — 拖拽连线进行态 · 实时校验 + 吸附提示</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(1000px 700px at 50% 44%, rgba(60,110,225,.16), transparent 56%),linear-gradient(180deg,#090b15,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsB }}"></div>
+
+        <svg viewBox="0 0 1280 720" width="1280" height="720" style="position:absolute;inset:0">
+          <defs><filter id="glowD" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter>
+          <linearGradient id="phD" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5fd4ff"/><stop offset="1" stop-color="#5fe0e0"/></linearGradient></defs>
+          <!-- e- in (placed) -->
+          <path d="M150 232 Q310 300 470 372" fill="none" stroke="#eaf6ff" stroke-width="1.8" filter="url(#glowD)" opacity=".8"/>
+          <path d="M150 232 Q310 300 470 372" fill="none" stroke="#eaf6ff" stroke-width="1.5"/>
+          <g transform="translate(312,302) rotate(24)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#eaf6ff"/></g>
+          <!-- photon placed -->
+          <path d="{{ photonD }}" fill="none" stroke="url(#phD)" stroke-width="2.8" filter="url(#glowD)" opacity=".55"/>
+          <path d="{{ photonD }}" fill="none" stroke="#aef3ff" stroke-width="1.6"/>
+          <!-- mu out placed -->
+          <path d="M810 372 Q970 300 1130 232" fill="none" stroke="#5fe0e6" stroke-width="1.8" filter="url(#glowD)" opacity=".8"/>
+          <path d="M810 372 Q970 300 1130 232" fill="none" stroke="#5fe0e6" stroke-width="1.5"/>
+          <g transform="translate(968,302) rotate(-24)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#5fe0e6"/></g>
+          <path d="M810 372 Q970 444 1130 512" fill="none" stroke="#eaf6ff" stroke-width="1.8" filter="url(#glowD)" opacity=".8"/>
+          <path d="M810 372 Q970 444 1130 512" fill="none" stroke="#eaf6ff" stroke-width="1.5"/>
+          <g transform="translate(968,442) rotate(24)"><path d="M-6 -5 L6 0 L-6 5 Z" fill="#eaf6ff"/></g>
+          <!-- DRAGGING ghost line: e+ being connected to V1 -->
+          <path d="M150 512 Q310 444 470 372" fill="none" stroke="#c6b2ff" stroke-width="2" stroke-dasharray="7 7" opacity=".75" style="animation:qrWave 1.2s linear infinite"/>
+          <!-- vertices -->
+          <circle cx="470" cy="372" r="22" fill="none" stroke="#5fe0a0" stroke-width="2" opacity=".9" style="animation:qrBreathe 1.6s ease-in-out infinite"/>
+          <circle cx="470" cy="372" r="16" fill="rgba(95,224,160,.12)" stroke="#5fe0a0" stroke-width="1.2"/>
+          <circle cx="470" cy="372" r="6.5" fill="#fff" filter="url(#glowD)"/><circle cx="470" cy="372" r="4" fill="#fff"/>
+          <circle cx="810" cy="372" r="14" fill="none" stroke="rgba(150,200,255,.4)" stroke-width="1.4"/>
+          <circle cx="810" cy="372" r="6.5" fill="#fff" filter="url(#glowD)"/><circle cx="810" cy="372" r="4" fill="#fff"/>
+          <!-- endpoints -->
+          <circle cx="150" cy="232" r="6" fill="#eaf6ff" filter="url(#glowD)"/><circle cx="150" cy="232" r="3.5" fill="#fff"/>
+          <circle cx="150" cy="512" r="9" fill="none" stroke="#c6b2ff" stroke-width="1.6" opacity=".7"/><circle cx="150" cy="512" r="6" fill="#c6b2ff" filter="url(#glowD)"/><circle cx="150" cy="512" r="3.5" fill="#e6dcff"/>
+          <circle cx="1130" cy="232" r="6" fill="#5fe0e6" filter="url(#glowD)"/><circle cx="1130" cy="232" r="3.5" fill="#bdf6f8"/>
+          <circle cx="1130" cy="512" r="6" fill="#eaf6ff" filter="url(#glowD)"/><circle cx="1130" cy="512" r="3.5" fill="#fff"/>
+        </svg>
+        <div style="position:absolute;left:104px;top:200px;font:300 26px 'Space Grotesk';color:#eaf6ff">e<sup style="font-size:.6em">−</sup></div>
+        <div style="position:absolute;left:104px;top:486px;font:300 26px 'Space Grotesk';color:#c6b2ff">e<sup style="font-size:.6em">+</sup></div>
+        <div style="position:absolute;right:104px;top:200px;font:300 26px 'Space Grotesk';color:#7fe6ee">μ<sup style="font-size:.6em">−</sup></div>
+        <div style="position:absolute;right:104px;top:486px;font:300 26px 'Space Grotesk';color:#eaf6ff">μ<sup style="font-size:.6em">+</sup></div>
+
+        <!-- dragged token following cursor -->
+        <div style="position:absolute;left:300px;top:430px;width:58px;height:58px;border-radius:14px;background:linear-gradient(160deg,rgba(150,110,255,.6),rgba(70,40,140,.6));border:1.5px solid #c6b2ff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(160,110,255,.6);transform:rotate(-6deg)"><span style="font:400 20px 'Space Grotesk';color:#fff">e<sup style="font-size:.6em">+</sup></span></div>
+        <svg width="30" height="34" viewBox="0 0 30 34" style="position:absolute;left:352px;top:476px"><path d="M4 2 L4 26 L11 20 L16 31 L20 29 L15 18 L24 18 Z" fill="#0a0c18" stroke="#cfe9ff" stroke-width="1.4"/></svg>
+
+        <!-- snap hint -->
+        <div style="position:absolute;left:500px;top:356px;display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:18px;background:rgba(95,224,160,.16);border:1px solid rgba(95,224,160,.5)"><span style="font:300 12px 'Noto Sans SC';color:#aef3d0">吸附到顶点 V1</span></div>
+
+        <!-- top bar -->
+        <div style="position:absolute;top:34px;left:54px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="font:400 13px 'Space Grotesk';letter-spacing:.12em;color:#6cd6ff">QED · 02</span><span style="width:5px;height:5px;border-radius:50%;background:#3a4674"></span><span style="font:400 22px 'Noto Sans SC';color:#fff">湮灭之门</span></div>
+          <div style="font:300 14px 'Noto Sans SC';color:#8b95ba;margin-top:7px">长按粒子拖到顶点,连成入射 / 出射完整的图。</div>
+        </div>
+        <div style="position:absolute;top:34px;right:44px;display:flex;gap:14px">
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,210,120,.4);display:flex;align-items:center;justify-content:center;color:#ffd980"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 21h4M12 2a6 6 0 0 1 4 10.5c-.6.6-1 1.3-1 2.5H9c0-1.2-.4-1.9-1-2.5A6 6 0 0 1 12 2Z"/></svg></div>
+          <div style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(150,180,240,.35);display:flex;align-items:center;justify-content:center;color:#cdd8f6"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></div>
+        </div>
+
+        <!-- validation toast -->
+        <div style="position:absolute;left:50%;top:118px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:9px 22px;border-radius:24px;background:rgba(255,170,90,.12);border:1px solid rgba(255,180,100,.5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffc070" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.5"/></svg><span style="font:300 14px 'Noto Sans SC';color:#ffd6a8;letter-spacing:.04em">顶点 V1 缺少一条入射线 · 还需放置 e⁺</span></div>
+
+        <!-- bottom tray with one active -->
+        <div style="position:absolute;left:54px;right:54px;bottom:34px;height:118px;border-radius:16px;background:linear-gradient(180deg,rgba(22,28,52,.72),rgba(13,17,34,.78));border:1px solid rgba(120,150,220,.22);backdrop-filter:blur(10px);display:flex;align-items:center;padding:0 26px;gap:26px">
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font:300 11px 'Noto Sans SC';letter-spacing:.16em;color:#7d86ad">可用粒子 · 拖拽放置</span>
+            <div style="display:flex;gap:16px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.42"><div style="width:54px;height:54px;border-radius:13px;background:rgba(20,28,54,.5);border:1px solid rgba(120,160,240,.25);display:flex;align-items:center;justify-content:center"><span style="font:400 19px 'Space Grotesk';color:#eaf6ff">e<sup style="font-size:.6em">−</sup></span></div><span style="font:300 10px 'Noto Sans SC';color:#7d86ad">电子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:54px;height:54px;border-radius:13px;background:linear-gradient(160deg,rgba(150,110,255,.5),rgba(40,28,90,.6));border:1.5px solid #c6b2ff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(160,110,255,.55);animation:qrBreathe 1.8s ease-in-out infinite"><span style="font:400 19px 'Space Grotesk';color:#fff">e<sup style="font-size:.6em">+</sup></span></div><span style="font:300 10px 'Noto Sans SC';color:#e6dcff">正电子 ←</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.42"><div style="width:54px;height:54px;border-radius:13px;background:rgba(20,28,54,.5);border:1px solid rgba(120,160,240,.25);display:flex;align-items:center;justify-content:center"><span style="font:400 19px 'Space Grotesk';color:#7fe6ee">γ</span></div><span style="font:300 10px 'Noto Sans SC';color:#7d86ad">光子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.42"><div style="width:54px;height:54px;border-radius:13px;background:rgba(20,28,54,.5);border:1px solid rgba(120,160,240,.25);display:flex;align-items:center;justify-content:center"><span style="font:400 17px 'Space Grotesk';color:#7fe6ee">μ<sup style="font-size:.6em">−</sup></span></div><span style="font:300 10px 'Noto Sans SC';color:#7d86ad">μ子</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:54px;height:54px;border-radius:13px;background:linear-gradient(160deg,rgba(40,58,108,.6),rgba(20,28,54,.5));border:1px solid rgba(120,160,240,.4);display:flex;align-items:center;justify-content:center"><span style="font:400 17px 'Space Grotesk';color:#c6b2ff">μ<sup style="font-size:.6em">+</sup></span></div><span style="font:300 10px 'Noto Sans SC';color:#9aa4c8">反μ子</span></div>
+            </div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:22px">
+            <div style="text-align:right"><div style="font:300 11px 'Noto Sans SC';color:#7d86ad">顶点 / 步数</div><div style="font:300 20px 'Space Grotesk';color:#cfe9ff">2 · 3</div></div>
+            <div style="height:56px;padding:0 38px;border-radius:30px;display:flex;align-items:center;gap:12px;background:rgba(120,140,190,.14);border:1px solid rgba(140,160,210,.25)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7d86ad" stroke-width="2.2"><path d="m5 13 4 4L19 7"/></svg><span style="font:400 18px 'Noto Sans SC';color:#7d86ad;letter-spacing:.1em">对撞验证</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION: VICTORY ============ -->
+  <div style="margin-bottom:18px;display:flex;align-items:baseline;gap:14px">
+    <div style="font:500 14px 'Space Grotesk';letter-spacing:.22em;color:#aeb8df">04 — 胜利结算</div>
+    <div style="font:300 13px 'Noto Sans SC';color:#5e688f">LEVEL COMPLETE</div>
+  </div>
+  <div style="display:flex;gap:48px;align-items:flex-start;margin-bottom:80px">
+
+    <!-- VICTORY A: centered modal -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 A — 居中结算弹窗</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(900px 700px at 50% 44%, rgba(60,110,225,.14), transparent 56%),linear-gradient(180deg,#090b15,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsA }}"></div>
+        <!-- faint diagram behind -->
+        <svg viewBox="0 0 1280 720" width="1280" height="720" style="position:absolute;inset:0;opacity:.16;filter:blur(1px)"><path d="M150 232 Q310 300 470 372" fill="none" stroke="#eaf6ff" stroke-width="1.6"/><path d="M150 512 Q310 444 470 372" fill="none" stroke="#c6b2ff" stroke-width="1.6"/><path d="M810 372 Q970 300 1130 232" fill="none" stroke="#5fe0e6" stroke-width="1.6"/><path d="M810 372 Q970 444 1130 512" fill="none" stroke="#eaf6ff" stroke-width="1.6"/><circle cx="470" cy="372" r="6" fill="#fff"/><circle cx="810" cy="372" r="6" fill="#fff"/></svg>
+        <div style="position:absolute;inset:0;background:rgba(6,8,18,.55);backdrop-filter:blur(3px)"></div>
+        <!-- burst -->
+        <div style="position:absolute;left:50%;top:236px;transform:translateX(-50%);width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(95,224,200,.22),transparent 66%);animation:qrBreathe 4s ease-in-out infinite"></div>
+
+        <!-- modal -->
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:540px;border-radius:22px;padding:42px 44px 36px;background:linear-gradient(170deg,rgba(26,32,58,.92),rgba(13,17,34,.94));border:1px solid rgba(130,170,240,.3);box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 60px rgba(70,140,255,.12);text-align:center">
+          <div style="font:300 13px 'Space Grotesk';letter-spacing:.4em;color:#6cd6ff">QED · 02 — 湮灭之门</div>
+          <div style="font:200 42px/1 'Noto Sans SC';color:#fff;letter-spacing:.14em;margin-top:14px;text-shadow:0 0 30px rgba(120,200,255,.4)">关卡完成</div>
+          <!-- stars -->
+          <div style="display:flex;justify-content:center;gap:16px;margin-top:26px">
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="#ffd36a" style="filter:drop-shadow(0 0 12px rgba(255,210,100,.7));animation:qrFloat 3s ease-in-out infinite"><path d="M12 2 9 9l-7 .5 5.5 4.5L5.5 21 12 17l6.5 4-1.5-7L22 9.5 15 9Z"/></svg>
+            <svg width="58" height="58" viewBox="0 0 24 24" fill="#ffd36a" style="filter:drop-shadow(0 0 16px rgba(255,210,100,.85));animation:qrFloat 3s ease-in-out .2s infinite"><path d="M12 2 9 9l-7 .5 5.5 4.5L5.5 21 12 17l6.5 4-1.5-7L22 9.5 15 9Z"/></svg>
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="#ffd36a" style="filter:drop-shadow(0 0 12px rgba(255,210,100,.7));animation:qrFloat 3s ease-in-out .4s infinite"><path d="M12 2 9 9l-7 .5 5.5 4.5L5.5 21 12 17l6.5 4-1.5-7L22 9.5 15 9Z"/></svg>
+          </div>
+          <!-- stats -->
+          <div style="display:flex;justify-content:center;gap:0;margin-top:30px;border-radius:14px;overflow:hidden;border:1px solid rgba(120,150,220,.18)">
+            <div style="flex:1;padding:18px 0;background:rgba(120,160,255,.04)"><div style="font:300 11px 'Noto Sans SC';color:#8b95ba;letter-spacing:.1em">评级</div><div style="font:300 30px 'Space Grotesk';color:#5fe0c0;margin-top:5px">S</div></div>
+            <div style="flex:1;padding:18px 0;border-left:1px solid rgba(120,150,220,.14)"><div style="font:300 11px 'Noto Sans SC';color:#8b95ba;letter-spacing:.1em">步数</div><div style="font:300 30px 'Space Grotesk';color:#cfe9ff;margin-top:5px">4</div></div>
+            <div style="flex:1;padding:18px 0;border-left:1px solid rgba(120,150,220,.14)"><div style="font:300 11px 'Noto Sans SC';color:#8b95ba;letter-spacing:.1em">用时</div><div style="font:300 30px 'Space Grotesk';color:#cfe9ff;margin-top:5px">01:12</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-top:20px;padding:11px;border-radius:12px;background:rgba(95,224,160,.08);border:1px solid rgba(95,224,160,.22)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5fe0a0" stroke-width="2"><path d="M12 2v6M12 2 9 5M12 2l3 3"/><circle cx="12" cy="15" r="6"/></svg><span style="font:300 13px 'Noto Sans SC';color:#aef3d0">解锁新粒子 · μ 子 已加入图鉴</span></div>
+          <!-- buttons -->
+          <div style="display:flex;gap:14px;margin-top:28px">
+            <div style="flex:none;width:56px;height:56px;border-radius:16px;border:1px solid rgba(140,170,230,.3);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg></div>
+            <div style="flex:none;width:56px;height:56px;border-radius:16px;border:1px solid rgba(140,170,230,.3);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="2.6"/><circle cx="12" cy="12" r="9" stroke-dasharray="1 4"/></svg></div>
+            <div style="flex:1;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:11px;background:linear-gradient(90deg,#3a78ff,#9a6bff);box-shadow:0 0 30px rgba(90,150,255,.4)" style-hover="box-shadow:0 0 46px rgba(110,170,255,.6)"><span style="font:400 18px 'Noto Sans SC';color:#fff;letter-spacing:.12em">下一关</span><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"><path d="m9 6 6 6-6 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VICTORY B: cinematic side layout -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 B — 影院式整屏 · 左评级右明细</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(1100px 800px at 30% 50%, rgba(70,130,255,.2), transparent 56%),radial-gradient(700px 600px at 28% 50%, rgba(95,224,200,.12), transparent 52%),linear-gradient(180deg,#090b15,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsC }}"></div>
+        <!-- particle burst left -->
+        <svg viewBox="0 0 1280 720" width="1280" height="720" style="position:absolute;inset:0;opacity:.6">
+          <defs><filter id="vbBlur"><feGaussianBlur stdDeviation="1.5"/></filter></defs>
+          <g stroke="#9fd0ff" stroke-width="1" opacity=".5" filter="url(#vbBlur)" style="animation:qrFlow 12s linear infinite">
+            <path d="M360 360 C 200 220, 120 160, 40 120" fill="none" stroke-dasharray="2 9"/>
+            <path d="M360 360 C 200 300, 120 280, 30 270" fill="none" stroke-dasharray="2 9"/>
+            <path d="M360 360 C 220 460, 140 540, 60 620" fill="none" stroke-dasharray="2 9"/>
+            <path d="M360 360 C 460 240, 540 160, 600 80" fill="none" stroke-dasharray="2 9"/>
+            <path d="M360 360 C 480 460, 560 560, 620 660" fill="none" stroke-dasharray="2 9"/>
+          </g>
+        </svg>
+        <div style="position:absolute;left:300px;top:300px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#fff,#7fd0ff 40%,transparent 72%);box-shadow:0 0 70px 18px rgba(120,200,255,.6);animation:qrBreathe 4s ease-in-out infinite"></div>
+
+        <!-- left rank -->
+        <div style="position:absolute;left:108px;top:0;bottom:0;width:480px;display:flex;flex-direction:column;justify-content:center">
+          <div style="font:300 13px 'Space Grotesk';letter-spacing:.4em;color:#6cd6ff">QED · 02 — 湮灭之门</div>
+          <div style="font:200 56px/1 'Noto Sans SC';color:#fff;letter-spacing:.12em;margin-top:16px;text-shadow:0 0 30px rgba(120,200,255,.4)">对撞成功</div>
+          <div style="display:flex;align-items:flex-end;gap:18px;margin-top:30px">
+            <div style="font:200 130px/.8 'Space Grotesk';color:#5fe0c0;text-shadow:0 0 40px rgba(95,224,200,.5)">S</div>
+            <div style="display:flex;gap:8px;padding-bottom:18px"><svg width="34" height="34" viewBox="0 0 24 24" fill="#ffd36a" style="filter:drop-shadow(0 0 8px rgba(255,210,100,.7))"><path d="M12 2 9 9l-7 .5 5.5 4.5L5.5 21 12 17l6.5 4-1.5-7L22 9.5 15 9Z"/></svg><svg width="34" height="34" viewBox="0 0 24 24" fill="#ffd36a" style="filter:drop-shadow(0 0 8px rgba(255,210,100,.7))"><path d="M12 2 9 9l-7 .5 5.5 4.5L5.5 21 12 17l6.5 4-1.5-7L22 9.5 15 9Z"/></svg><svg width="34" height="34" viewBox="0 0 24 24" fill="#ffd36a" style="filter:drop-shadow(0 0 8px rgba(255,210,100,.7))"><path d="M12 2 9 9l-7 .5 5.5 4.5L5.5 21 12 17l6.5 4-1.5-7L22 9.5 15 9Z"/></svg></div>
+          </div>
+        </div>
+
+        <!-- right details panel -->
+        <div style="position:absolute;right:108px;top:0;bottom:0;width:420px;display:flex;flex-direction:column;justify-content:center;gap:18px">
+          <div style="display:flex;flex-direction:column;gap:1px;border-radius:14px;overflow:hidden;border:1px solid rgba(120,150,220,.2)">
+            <div style="display:flex;justify-content:space-between;padding:18px 22px;background:rgba(120,160,255,.05)"><span style="font:300 14px 'Noto Sans SC';color:#9aa4c8">步数</span><span style="font:300 18px 'Space Grotesk';color:#cfe9ff">4 <span style="font-size:.7em;color:#6e7799">/ 最佳 4</span></span></div>
+            <div style="display:flex;justify-content:space-between;padding:18px 22px;background:rgba(120,160,255,.03)"><span style="font:300 14px 'Noto Sans SC';color:#9aa4c8">用时</span><span style="font:300 18px 'Space Grotesk';color:#cfe9ff">01:12</span></div>
+            <div style="display:flex;justify-content:space-between;padding:18px 22px;background:rgba(120,160,255,.05)"><span style="font:300 14px 'Noto Sans SC';color:#9aa4c8">守恒精度</span><span style="font:300 18px 'Space Grotesk';color:#5fe0c0">100%</span></div>
+            <div style="display:flex;justify-content:space-between;padding:18px 22px;background:rgba(120,160,255,.03)"><span style="font:300 14px 'Noto Sans SC';color:#9aa4c8">无提示通关</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5fe0a0" stroke-width="2.4"><path d="m5 13 4 4L19 7"/></svg></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:12px;background:rgba(150,110,255,.08);border:1px solid rgba(160,120,255,.25)"><div style="width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,#e6dcff,#9a6bff 60%,transparent);box-shadow:0 0 16px #9a6bff;flex:none"></div><div><div style="font:300 11px 'Noto Sans SC';color:#b9a6ff">新粒子解锁</div><div style="font:400 16px 'Noto Sans SC';color:#fff">μ 子 已加入图鉴</div></div></div>
+          <div style="display:flex;gap:14px;margin-top:6px">
+            <div style="flex:1;height:54px;border-radius:28px;display:flex;align-items:center;justify-content:center;gap:9px;border:1px solid rgba(140,170,230,.3);color:#cdd8f6" style-hover="border-color:#8fd0ff"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg><span style="font:300 15px 'Noto Sans SC'">重玩</span></div>
+            <div style="flex:1.4;height:54px;border-radius:28px;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(90deg,#3a78ff,#9a6bff);box-shadow:0 0 28px rgba(90,150,255,.4)" style-hover="box-shadow:0 0 44px rgba(110,170,255,.6)"><span style="font:400 17px 'Noto Sans SC';color:#fff;letter-spacing:.1em">下一关</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"><path d="m9 6 6 6-6 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION: SETTINGS ============ -->
+  <div style="margin-bottom:18px;display:flex;align-items:baseline;gap:14px">
+    <div style="font:500 14px 'Space Grotesk';letter-spacing:.22em;color:#aeb8df">05 — 设置</div>
+    <div style="font:300 13px 'Noto Sans SC';color:#5e688f">SETTINGS</div>
+  </div>
+  <div style="display:flex;gap:48px;align-items:flex-start;margin-bottom:80px">
+
+    <!-- SETTINGS A: modal with tab rail -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 A — 叠加弹窗 · 左侧分类</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(900px 700px at 50% 30%, rgba(60,110,225,.12), transparent 56%),linear-gradient(180deg,#0a0c18,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsB }}"></div>
+        <div style="position:absolute;inset:0;background:rgba(6,8,18,.5);backdrop-filter:blur(3px)"></div>
+
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:820px;height:540px;border-radius:22px;overflow:hidden;background:linear-gradient(170deg,rgba(24,30,56,.95),rgba(13,17,34,.96));border:1px solid rgba(130,170,240,.28);box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex">
+          <!-- tab rail -->
+          <div style="width:210px;background:rgba(10,14,28,.5);border-right:1px solid rgba(120,150,220,.16);padding:30px 18px;display:flex;flex-direction:column">
+            <div style="font:300 20px 'Noto Sans SC';color:#fff;letter-spacing:.06em;padding:0 12px;margin-bottom:26px">设置</div>
+            <div style="display:flex;align-items:center;gap:12px;height:46px;padding:0 14px;border-radius:11px;background:linear-gradient(90deg,rgba(63,123,255,.22),rgba(160,107,255,.12));border:1px solid rgba(140,180,255,.3);color:#fff"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 5 6 9H2v6h4l5 4V5ZM16 9a4 4 0 0 1 0 6M19 7a8 8 0 0 1 0 10"/></svg><span style="font:300 15px 'Noto Sans SC'">音频</span></div>
+            <div style="display:flex;align-items:center;gap:12px;height:46px;padding:0 14px;border-radius:11px;color:#9aa4c8" style-hover="color:#fff;background:rgba(120,160,255,.06)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg><span style="font:300 15px 'Noto Sans SC'">画面</span></div>
+            <div style="display:flex;align-items:center;gap:12px;height:46px;padding:0 14px;border-radius:11px;color:#9aa4c8" style-hover="color:#fff;background:rgba(120,160,255,.06)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3v12M6 21v-2M18 21V9M18 3v2M6 15a3 3 0 0 0 0 0M18 5a3 3 0 0 0 0 0"/><circle cx="6" cy="17" r="2.4"/><circle cx="18" cy="7" r="2.4"/></svg><span style="font:300 15px 'Noto Sans SC'">操作</span></div>
+            <div style="display:flex;align-items:center;gap:12px;height:46px;padding:0 14px;border-radius:11px;color:#9aa4c8" style-hover="color:#fff;background:rgba(120,160,255,.06)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg><span style="font:300 15px 'Noto Sans SC'">语言</span></div>
+            <div style="margin-top:auto;display:flex;align-items:center;gap:12px;height:46px;padding:0 14px;border-radius:11px;color:#8b95ba" style-hover="color:#fff"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8v.5"/></svg><span style="font:300 14px 'Noto Sans SC'">关于</span></div>
+          </div>
+          <!-- content -->
+          <div style="flex:1;padding:34px 38px;position:relative">
+            <div style="font:300 12px 'Space Grotesk';letter-spacing:.24em;color:#6cd6ff">AUDIO · 音频</div>
+            <!-- slider rows -->
+            <div style="margin-top:26px;display:flex;flex-direction:column;gap:26px">
+              <div><div style="display:flex;justify-content:space-between;margin-bottom:11px"><span style="font:300 15px 'Noto Sans SC';color:#dfe6ff">主音量</span><span style="font:300 14px 'Space Grotesk';color:#6cd6ff">80</span></div><div style="height:5px;border-radius:3px;background:rgba(140,160,210,.18);position:relative"><div style="position:absolute;left:0;top:0;height:100%;width:80%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff)"></div><div style="position:absolute;left:80%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(120,200,255,.7)"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;margin-bottom:11px"><span style="font:300 15px 'Noto Sans SC';color:#dfe6ff">音乐</span><span style="font:300 14px 'Space Grotesk';color:#6cd6ff">62</span></div><div style="height:5px;border-radius:3px;background:rgba(140,160,210,.18);position:relative"><div style="position:absolute;left:0;top:0;height:100%;width:62%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff)"></div><div style="position:absolute;left:62%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(120,200,255,.7)"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;margin-bottom:11px"><span style="font:300 15px 'Noto Sans SC';color:#dfe6ff">音效</span><span style="font:300 14px 'Space Grotesk';color:#6cd6ff">90</span></div><div style="height:5px;border-radius:3px;background:rgba(140,160,210,.18);position:relative"><div style="position:absolute;left:0;top:0;height:100%;width:90%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff)"></div><div style="position:absolute;left:90%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(120,200,255,.7)"></div></div></div>
+            </div>
+            <!-- toggles -->
+            <div style="margin-top:34px;display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:300 15px 'Noto Sans SC';color:#dfe6ff">环境氛围音</span><div style="width:48px;height:26px;border-radius:14px;background:linear-gradient(90deg,#3a78ff,#9a6bff);position:relative;box-shadow:0 0 14px rgba(90,150,255,.4)"><div style="position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff"></div></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:300 15px 'Noto Sans SC';color:#dfe6ff">命中震动反馈</span><div style="width:48px;height:26px;border-radius:14px;background:rgba(140,160,210,.2);position:relative"><div style="position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#9aa4c8"></div></div></div>
+            </div>
+            <div style="position:absolute;right:38px;bottom:30px;display:flex;gap:12px"><div style="height:44px;padding:0 26px;border-radius:24px;display:flex;align-items:center;border:1px solid rgba(140,170,230,.3);color:#cdd8f6;font:300 14px 'Noto Sans SC'" style-hover="border-color:#8fd0ff">恢复默认</div><div style="height:44px;padding:0 30px;border-radius:24px;display:flex;align-items:center;background:linear-gradient(90deg,#3a78ff,#9a6bff);color:#fff;font:400 14px 'Noto Sans SC';letter-spacing:.08em" style-hover="box-shadow:0 0 28px rgba(110,170,255,.5)">保存</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS B: full panel -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 B — 整屏双栏 · 顶部标签</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(1000px 800px at 70% 20%, rgba(60,110,225,.14), transparent 56%),linear-gradient(180deg,#0a0c18,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsA }}"></div>
+        <!-- header -->
+        <div style="position:absolute;left:64px;top:48px"><div style="font:300 32px 'Noto Sans SC';color:#fff;letter-spacing:.06em">设置</div><div style="font:300 12px 'Space Grotesk';letter-spacing:.2em;color:#6cd6ff;margin-top:6px">SETTINGS</div></div>
+        <div style="position:absolute;top:54px;right:64px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#ff9aa0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6 6 18"/></svg></div>
+        <!-- tabs -->
+        <div style="position:absolute;left:64px;top:128px;display:flex;gap:30px">
+          <span style="font:400 15px 'Noto Sans SC';color:#fff;padding-bottom:10px;border-bottom:2px solid #5fd4ff">音频</span>
+          <span style="font:300 15px 'Noto Sans SC';color:#8b95ba;padding-bottom:10px" style-hover="color:#cfe9ff">画面</span>
+          <span style="font:300 15px 'Noto Sans SC';color:#8b95ba;padding-bottom:10px" style-hover="color:#cfe9ff">操作</span>
+          <span style="font:300 15px 'Noto Sans SC';color:#8b95ba;padding-bottom:10px" style-hover="color:#cfe9ff">辅助功能</span>
+          <span style="font:300 15px 'Noto Sans SC';color:#8b95ba;padding-bottom:10px" style-hover="color:#cfe9ff">语言</span>
+        </div>
+        <div style="position:absolute;left:64px;right:64px;top:165px;height:1px;background:rgba(120,150,220,.16)"></div>
+        <!-- two columns -->
+        <div style="position:absolute;left:64px;top:206px;width:520px;display:flex;flex-direction:column;gap:30px">
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font:300 16px 'Noto Sans SC';color:#dfe6ff">主音量</span><span style="font:300 15px 'Space Grotesk';color:#6cd6ff">80</span></div><div style="height:6px;border-radius:3px;background:rgba(140,160,210,.18);position:relative"><div style="position:absolute;height:100%;width:80%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff)"></div><div style="position:absolute;left:80%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(120,200,255,.7)"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font:300 16px 'Noto Sans SC';color:#dfe6ff">背景音乐</span><span style="font:300 15px 'Space Grotesk';color:#6cd6ff">62</span></div><div style="height:6px;border-radius:3px;background:rgba(140,160,210,.18);position:relative"><div style="position:absolute;height:100%;width:62%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff)"></div><div style="position:absolute;left:62%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(120,200,255,.7)"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font:300 16px 'Noto Sans SC';color:#dfe6ff">音效</span><span style="font:300 15px 'Space Grotesk';color:#6cd6ff">90</span></div><div style="height:6px;border-radius:3px;background:rgba(140,160,210,.18);position:relative"><div style="position:absolute;height:100%;width:90%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff)"></div><div style="position:absolute;left:90%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 0 12px rgba(120,200,255,.7)"></div></div></div>
+        </div>
+        <div style="position:absolute;right:64px;top:206px;width:520px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-radius:13px;background:rgba(120,160,255,.05);border:1px solid rgba(120,150,220,.16)"><div><div style="font:300 16px 'Noto Sans SC';color:#dfe6ff">环境氛围音</div><div style="font:300 12px 'Noto Sans SC';color:#7d86ad;margin-top:3px">深空粒子的低频回响</div></div><div style="width:50px;height:27px;border-radius:14px;background:linear-gradient(90deg,#3a78ff,#9a6bff);position:relative"><div style="position:absolute;right:3px;top:3px;width:21px;height:21px;border-radius:50%;background:#fff"></div></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-radius:13px;background:rgba(120,160,255,.05);border:1px solid rgba(120,150,220,.16)"><div><div style="font:300 16px 'Noto Sans SC';color:#dfe6ff">动态旁白</div><div style="font:300 12px 'Noto Sans SC';color:#7d86ad;margin-top:3px">解谜时朗读物理提示</div></div><div style="width:50px;height:27px;border-radius:14px;background:rgba(140,160,210,.2);position:relative"><div style="position:absolute;left:3px;top:3px;width:21px;height:21px;border-radius:50%;background:#9aa4c8"></div></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-radius:13px;background:rgba(120,160,255,.05);border:1px solid rgba(120,150,220,.16)"><div><div style="font:300 16px 'Noto Sans SC';color:#dfe6ff">输出设备</div></div><div style="display:flex;align-items:center;gap:10px;font:300 14px 'Noto Sans SC';color:#cfe9ff">系统默认 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></div></div>
+        </div>
+        <div style="position:absolute;right:64px;bottom:48px;display:flex;gap:14px"><div style="height:48px;padding:0 28px;border-radius:26px;display:flex;align-items:center;border:1px solid rgba(140,170,230,.3);color:#cdd8f6;font:300 15px 'Noto Sans SC'" style-hover="border-color:#8fd0ff">恢复默认</div><div style="height:48px;padding:0 34px;border-radius:26px;display:flex;align-items:center;background:linear-gradient(90deg,#3a78ff,#9a6bff);color:#fff;font:400 15px 'Noto Sans SC';letter-spacing:.08em" style-hover="box-shadow:0 0 30px rgba(110,170,255,.5)">应用并返回</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION: CODEX ============ -->
+  <div style="margin-bottom:18px;display:flex;align-items:baseline;gap:14px">
+    <div style="font:500 14px 'Space Grotesk';letter-spacing:.22em;color:#aeb8df">06 — 图鉴</div>
+    <div style="font:300 13px 'Noto Sans SC';color:#5e688f">CODEX · 粒子百科</div>
+  </div>
+  <div style="display:flex;gap:48px;align-items:flex-start;margin-bottom:80px">
+
+    <!-- CODEX A: card browser -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 A — 分类卡片 + 详情面板</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(900px 700px at 30% 20%, rgba(60,110,225,.13), transparent 56%),linear-gradient(180deg,#0a0c18,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsC }}"></div>
+        <!-- header -->
+        <div style="position:absolute;left:60px;top:44px"><div style="font:300 30px 'Noto Sans SC';color:#fff;letter-spacing:.06em">图鉴</div><div style="font:300 13px 'Noto Sans SC';color:#8b95ba;margin-top:5px">粒子百科 · 已发现 <span style="color:#6cd6ff">14</span> / 32</div></div>
+        <div style="position:absolute;top:50px;right:60px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(150,180,240,.4);display:flex;align-items:center;justify-content:center;color:#cdd8f6" style-hover="border-color:#ff9aa0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6 6 18"/></svg></div>
+
+        <!-- category rail -->
+        <div style="position:absolute;left:60px;top:128px;width:170px;display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 16px;border-radius:11px;background:linear-gradient(90deg,rgba(63,123,255,.2),rgba(95,224,238,.08));border:1px solid rgba(120,200,255,.32);color:#fff"><span style="font:300 15px 'Noto Sans SC'">轻子</span><span style="font:300 12px 'Space Grotesk';color:#6cd6ff">6/6</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 16px;border-radius:11px;color:#9aa4c8" style-hover="background:rgba(120,160,255,.06);color:#fff"><span style="font:300 15px 'Noto Sans SC'">夸克</span><span style="font:300 12px 'Space Grotesk';color:#7d86ad">4/6</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 16px;border-radius:11px;color:#9aa4c8" style-hover="background:rgba(120,160,255,.06);color:#fff"><span style="font:300 15px 'Noto Sans SC'">规范玻色子</span><span style="font:300 12px 'Space Grotesk';color:#7d86ad">3/5</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 16px;border-radius:11px;color:#9aa4c8" style-hover="background:rgba(120,160,255,.06);color:#fff"><span style="font:300 15px 'Noto Sans SC'">复合粒子</span><span style="font:300 12px 'Space Grotesk';color:#7d86ad">1/15</span></div>
+        </div>
+
+        <!-- card grid -->
+        <div style="position:absolute;left:252px;top:128px;width:600px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+          <div style="border-radius:14px;padding:16px;background:linear-gradient(160deg,rgba(40,58,108,.5),rgba(18,24,48,.6));border:1.5px solid rgba(95,224,238,.5);box-shadow:0 0 22px rgba(95,224,238,.2)"><div style="display:flex;justify-content:space-between"><span style="font:300 28px 'Space Grotesk';color:#eaf6ff">e<sup style="font-size:.55em">−</sup></span><span style="font:300 12px 'Space Grotesk';color:#7fe6ee">−1</span></div><div style="font:300 14px 'Noto Sans SC';color:#dfe6ff;margin-top:8px">电子</div><div style="font:300 11px 'Space Grotesk';color:#7d86ad;margin-top:2px">0.511 MeV</div></div>
+          <div style="border-radius:14px;padding:16px;background:linear-gradient(160deg,rgba(60,40,108,.5),rgba(18,24,48,.6));border:1px solid rgba(160,120,255,.4)"><div style="display:flex;justify-content:space-between"><span style="font:300 28px 'Space Grotesk';color:#e6dcff">e<sup style="font-size:.55em">+</sup></span><span style="font:300 12px 'Space Grotesk';color:#c6b2ff">+1</span></div><div style="font:300 14px 'Noto Sans SC';color:#dfe6ff;margin-top:8px">正电子</div><div style="font:300 11px 'Space Grotesk';color:#7d86ad;margin-top:2px">0.511 MeV</div></div>
+          <div style="border-radius:14px;padding:16px;background:linear-gradient(160deg,rgba(40,58,108,.5),rgba(18,24,48,.6));border:1px solid rgba(95,224,238,.3)"><div style="display:flex;justify-content:space-between"><span style="font:300 26px 'Space Grotesk';color:#bdf6f8">μ<sup style="font-size:.55em">−</sup></span><span style="font:300 12px 'Space Grotesk';color:#7fe6ee">−1</span></div><div style="font:300 14px 'Noto Sans SC';color:#dfe6ff;margin-top:8px">μ 子</div><div style="font:300 11px 'Space Grotesk';color:#7d86ad;margin-top:2px">105.7 MeV</div></div>
+          <div style="border-radius:14px;padding:16px;background:linear-gradient(160deg,rgba(60,40,108,.5),rgba(18,24,48,.6));border:1px solid rgba(160,120,255,.3)"><div style="display:flex;justify-content:space-between"><span style="font:300 26px 'Space Grotesk';color:#e6dcff">μ<sup style="font-size:.55em">+</sup></span><span style="font:300 12px 'Space Grotesk';color:#c6b2ff">+1</span></div><div style="font:300 14px 'Noto Sans SC';color:#dfe6ff;margin-top:8px">反 μ 子</div><div style="font:300 11px 'Space Grotesk';color:#7d86ad;margin-top:2px">105.7 MeV</div></div>
+          <div style="border-radius:14px;padding:16px;background:linear-gradient(160deg,rgba(40,58,108,.4),rgba(18,24,48,.6));border:1px solid rgba(120,160,240,.22)"><div style="display:flex;justify-content:space-between"><span style="font:300 24px 'Space Grotesk';color:#bcd0ff;font-style:italic">ν<sub style="font-size:.5em">e</sub></span><span style="font:300 12px 'Space Grotesk';color:#9aa4c8">0</span></div><div style="font:300 14px 'Noto Sans SC';color:#dfe6ff;margin-top:8px">电子中微子</div><div style="font:300 11px 'Space Grotesk';color:#7d86ad;margin-top:2px">~0 MeV</div></div>
+          <div style="border-radius:14px;padding:16px;background:rgba(18,22,40,.5);border:1px dashed rgba(120,140,190,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:.7"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6e7799" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span style="font:300 11px 'Noto Sans SC';color:#6e7799">未发现</span></div>
+          <div style="border-radius:14px;padding:16px;background:rgba(18,22,40,.5);border:1px dashed rgba(120,140,190,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:.7"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6e7799" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span style="font:300 11px 'Noto Sans SC';color:#6e7799">未发现</span></div>
+          <div style="border-radius:14px;padding:16px;background:rgba(18,22,40,.5);border:1px dashed rgba(120,140,190,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:.7"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6e7799" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span style="font:300 11px 'Noto Sans SC';color:#6e7799">未发现</span></div>
+          <div style="border-radius:14px;padding:16px;background:rgba(18,22,40,.5);border:1px dashed rgba(120,140,190,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:.7"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6e7799" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span style="font:300 11px 'Noto Sans SC';color:#6e7799">未发现</span></div>
+        </div>
+
+        <!-- detail panel -->
+        <div style="position:absolute;right:60px;top:128px;width:312px;height:520px;border-radius:18px;padding:30px;background:linear-gradient(170deg,rgba(26,32,58,.85),rgba(13,17,34,.9));border:1px solid rgba(120,200,255,.26);box-shadow:0 18px 50px rgba(0,0,0,.45)">
+          <div style="display:flex;align-items:center;gap:18px">
+            <div style="width:84px;height:84px;border-radius:20px;background:radial-gradient(circle at 40% 35%,#dff4ff,#3aa6ff 70%,rgba(40,120,230,0));box-shadow:0 0 32px rgba(95,200,255,.5);display:flex;align-items:center;justify-content:center"><span style="font:300 38px 'Space Grotesk';color:#06121f">e<sup style="font-size:.5em">−</sup></span></div>
+            <div><div style="font:300 24px 'Noto Sans SC';color:#fff">电子</div><div style="font:300 12px 'Space Grotesk';letter-spacing:.18em;color:#6cd6ff;margin-top:4px">ELECTRON · 轻子</div></div>
+          </div>
+          <div style="margin-top:24px;display:flex;flex-direction:column;gap:1px;border-radius:12px;overflow:hidden;border:1px solid rgba(120,150,220,.16)">
+            <div style="display:flex;justify-content:space-between;padding:13px 16px;background:rgba(120,160,255,.05)"><span style="font:300 13px 'Noto Sans SC';color:#8b95ba">质量</span><span style="font:300 13px 'Space Grotesk';color:#dfe6ff">0.511 MeV/c²</span></div>
+            <div style="display:flex;justify-content:space-between;padding:13px 16px"><span style="font:300 13px 'Noto Sans SC';color:#8b95ba">电荷</span><span style="font:300 13px 'Space Grotesk';color:#dfe6ff">−1 e</span></div>
+            <div style="display:flex;justify-content:space-between;padding:13px 16px;background:rgba(120,160,255,.05)"><span style="font:300 13px 'Noto Sans SC';color:#8b95ba">自旋</span><span style="font:300 13px 'Space Grotesk';color:#dfe6ff">½</span></div>
+            <div style="display:flex;justify-content:space-between;padding:13px 16px"><span style="font:300 13px 'Noto Sans SC';color:#8b95ba">反粒子</span><span style="font:300 13px 'Space Grotesk';color:#c6b2ff">e⁺ 正电子</span></div>
+          </div>
+          <div style="font:300 13px/1.75 'Noto Sans SC';color:#9aa4c8;margin-top:18px">最轻的带电轻子,稳定且无内部结构。在 QED 中通过交换光子相互作用。</div>
+          <div style="margin-top:18px"><div style="font:300 11px 'Noto Sans SC';letter-spacing:.14em;color:#7d86ad;margin-bottom:9px">出现于</div><div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font:300 12px 'Space Grotesk';color:#cfe9ff;padding:5px 11px;border-radius:14px;background:rgba(95,200,255,.1);border:1px solid rgba(95,200,255,.25)">2-1</span><span style="font:300 12px 'Space Grotesk';color:#cfe9ff;padding:5px 11px;border-radius:14px;background:rgba(95,200,255,.1);border:1px solid rgba(95,200,255,.25)">2-4</span><span style="font:300 12px 'Space Grotesk';color:#cfe9ff;padding:5px 11px;border-radius:14px;background:rgba(95,200,255,.1);border:1px solid rgba(95,200,255,.25)">5-2</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CODEX B: standard model table -->
+    <div style="display:flex;flex-direction:column;gap:13px;flex:none">
+      <div style="font:500 12px 'Space Grotesk';letter-spacing:.14em;color:#7d86ad">变体 B — 标准模型图谱</div>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:3px;background:#070912;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:0;background:radial-gradient(1000px 800px at 50% 16%, rgba(60,110,225,.13), transparent 56%),linear-gradient(180deg,#0a0c18,#06070f)"></div>
+        <div style="position:absolute;top:0;left:0;width:1px;height:1px;border-radius:50%;box-shadow:{{ starsB }}"></div>
+        <div style="position:absolute;left:60px;top:44px"><div style="font:300 30px 'Noto Sans SC';color:#fff;letter-spacing:.06em">标准模型图谱</div><div style="font:300 13px 'Noto Sans SC';color:#8b95ba;margin-top:5px">基本粒子全景 · 收集进度点亮单元</div></div>
+        <div style="position:absolute;top:50px;right:60px;display:flex;gap:18px;align-items:center">
+          <span style="display:flex;align-items:center;gap:7px;font:300 12px 'Noto Sans SC';color:#9aa4c8"><span style="width:12px;height:12px;border-radius:3px;background:#a07bff"></span>夸克</span>
+          <span style="display:flex;align-items:center;gap:7px;font:300 12px 'Noto Sans SC';color:#9aa4c8"><span style="width:12px;height:12px;border-radius:3px;background:#5fd4ff"></span>轻子</span>
+          <span style="display:flex;align-items:center;gap:7px;font:300 12px 'Noto Sans SC';color:#9aa4c8"><span style="width:12px;height:12px;border-radius:3px;background:#ff9a6a"></span>玻色子</span>
+          <span style="display:flex;align-items:center;gap:7px;font:300 12px 'Noto Sans SC';color:#9aa4c8"><span style="width:12px;height:12px;border-radius:3px;background:#ffd36a"></span>希格斯</span>
+        </div>
+
+        <!-- generation labels -->
+        <div style="position:absolute;left:158px;top:150px;display:flex;gap:24px;font:300 12px 'Space Grotesk';letter-spacing:.1em;color:#6e7799"><span style="width:108px;text-align:center">第一代</span><span style="width:108px;text-align:center">第二代</span><span style="width:108px;text-align:center">第三代</span></div>
+
+        <!-- table grid: rows of cells -->
+        <div style="position:absolute;left:158px;top:182px;display:flex;flex-direction:column;gap:14px">
+          <!-- up quarks -->
+          <div style="display:flex;gap:24px">
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(90,60,160,.45),rgba(30,20,60,.5));border:1px solid rgba(160,120,255,.45);box-shadow:0 0 18px rgba(140,90,255,.2)"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#c6b2ff"><span>u</span><span>+⅔</span></div><div style="font:300 34px 'Space Grotesk';color:#e6dcff;margin-top:4px">u</div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">上夸克</div></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(90,60,160,.45),rgba(30,20,60,.5));border:1px solid rgba(160,120,255,.45)"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#c6b2ff"><span>c</span><span>+⅔</span></div><div style="font:300 34px 'Space Grotesk';color:#e6dcff;margin-top:4px">c</div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">粲夸克</div></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:rgba(18,22,40,.5);border:1px dashed rgba(150,120,210,.3);opacity:.55;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a7bb0" stroke-width="1.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(160,90,60,.4),rgba(60,30,20,.5));border:1px solid rgba(255,150,100,.4);margin-left:24px"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#ffb78f"><span>g</span><span>0</span></div><div style="font:300 34px 'Space Grotesk';color:#ffd8c0;margin-top:4px">g</div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">胶子</div></div>
+          </div>
+          <!-- down quarks -->
+          <div style="display:flex;gap:24px">
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(90,60,160,.45),rgba(30,20,60,.5));border:1px solid rgba(160,120,255,.45)"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#c6b2ff"><span>d</span><span>−⅓</span></div><div style="font:300 34px 'Space Grotesk';color:#e6dcff;margin-top:4px">d</div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">下夸克</div></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(90,60,160,.45),rgba(30,20,60,.5));border:1px solid rgba(160,120,255,.45)"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#c6b2ff"><span>s</span><span>−⅓</span></div><div style="font:300 34px 'Space Grotesk';color:#e6dcff;margin-top:4px">s</div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">奇夸克</div></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:rgba(18,22,40,.5);border:1px dashed rgba(150,120,210,.3);opacity:.55;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a7bb0" stroke-width="1.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(160,90,60,.4),rgba(60,30,20,.5));border:1.5px solid rgba(255,150,100,.55);box-shadow:0 0 18px rgba(255,150,90,.22);margin-left:24px"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#ffb78f"><span>γ</span><span>0</span></div><div style="font:300 34px 'Space Grotesk';color:#ffd8c0;margin-top:4px">γ</div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">光子</div></div>
+          </div>
+          <!-- charged leptons -->
+          <div style="display:flex;gap:24px">
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(40,90,150,.5),rgba(18,30,55,.55));border:1.5px solid rgba(95,224,238,.55);box-shadow:0 0 18px rgba(95,200,255,.25)"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#7fe6ee"><span>e</span><span>−1</span></div><div style="font:300 34px 'Space Grotesk';color:#eaf6ff;margin-top:4px">e</div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">电子</div></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(40,90,150,.5),rgba(18,30,55,.55));border:1.5px solid rgba(95,224,238,.55);box-shadow:0 0 18px rgba(95,200,255,.25)"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#7fe6ee"><span>μ</span><span>−1</span></div><div style="font:300 34px 'Space Grotesk';color:#eaf6ff;margin-top:4px">μ</div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">μ子</div></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:rgba(18,28,48,.5);border:1px dashed rgba(95,180,210,.3);opacity:.55;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6f97a8" stroke-width="1.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(160,90,60,.4),rgba(60,30,20,.5));border:1px solid rgba(255,150,100,.4);margin-left:24px"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#ffb78f"><span>Z</span><span>0</span></div><div style="font:300 30px 'Space Grotesk';color:#ffd8c0;margin-top:6px">Z<sup style="font-size:.5em">0</sup></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">Z玻色子</div></div>
+          </div>
+          <!-- neutrinos -->
+          <div style="display:flex;gap:24px">
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:linear-gradient(160deg,rgba(40,90,150,.4),rgba(18,30,55,.5));border:1px solid rgba(95,224,238,.3)"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#7fe6ee"><span>νe</span><span>0</span></div><div style="font:300 30px 'Space Grotesk';color:#cfeefe;margin-top:6px">ν<sub style="font-size:.5em">e</sub></div><div style="font:300 11px 'Noto Sans SC';color:#9aa4c8">电子中微子</div></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:rgba(18,28,48,.5);border:1px dashed rgba(95,180,210,.3);opacity:.55;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6f97a8" stroke-width="1.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:rgba(18,28,48,.5);border:1px dashed rgba(95,180,210,.3);opacity:.55;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6f97a8" stroke-width="1.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+            <div style="width:108px;height:104px;border-radius:13px;padding:13px;background:rgba(40,30,20,.5);border:1px dashed rgba(255,170,110,.3);opacity:.6;margin-left:24px;display:flex;flex-direction:column;justify-content:space-between"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#caa07a"><span>W</span><span>±1</span></div><div style="font:300 30px 'Space Grotesk';color:#e8c5a8">W<sup style="font-size:.5em">±</sup></div><div style="font:300 11px 'Noto Sans SC';color:#8a7b66">W玻色子</div></div>
+          </div>
+        </div>
+        <!-- higgs cell -->
+        <div style="position:absolute;left:704px;top:182px;width:104px;height:246px;border-radius:13px;padding:14px;background:linear-gradient(160deg,rgba(160,140,50,.4),rgba(60,50,20,.5));border:1px solid rgba(255,210,100,.4);display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;font:300 11px 'Space Grotesk';color:#ffd98f"><span>H</span><span>0</span></div><div style="font:300 36px 'Space Grotesk';color:#ffe9b8;margin-top:8px">H</div><div style="font:300 11px 'Noto Sans SC';color:#bba968">希格斯</div><div style="margin-top:auto;font:300 10.5px/1.5 'Noto Sans SC';color:#8a7d56">赋予粒子质量的场</div></div>
+
+        <!-- right note -->
+        <div style="position:absolute;right:60px;top:454px;width:260px;border-radius:14px;padding:20px;background:linear-gradient(170deg,rgba(26,32,58,.8),rgba(13,17,34,.85));border:1px solid rgba(120,150,220,.2)"><div style="font:300 12px 'Space Grotesk';letter-spacing:.18em;color:#6cd6ff">提示</div><div style="font:300 13px/1.75 'Noto Sans SC';color:#9aa4c8;margin-top:10px">在解谜关卡中首次使用某粒子,即可在此点亮它的单元格并解锁词条。</div><div style="margin-top:14px;height:5px;border-radius:3px;background:rgba(140,160,210,.18)"><div style="height:100%;width:44%;border-radius:3px;background:linear-gradient(90deg,#3aa6ff,#9a6bff)"></div></div><div style="font:300 11px 'Space Grotesk';color:#7d86ad;margin-top:8px">已点亮 14 / 32</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  starfield(n, w, h, seed) {
+    let s = seed >>> 0;
+    const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const x = Math.round(rnd() * w), y = Math.round(rnd() * h);
+      const big = rnd() < 0.14;
+      const a = (0.25 + rnd() * 0.6).toFixed(2);
+      const col = rnd() < 0.16 ? `rgba(150,200,255,${a})` : `rgba(255,255,255,${a})`;
+      out.push(`${x}px ${y}px 0 ${big ? '0.6px' : '0'} ${col}`);
+    }
+    return out.join(',');
+  }
+  cbez(p, t) {
+    const u = 1 - t, a = u*u*u, b = 3*u*u*t, c = 3*u*t*t, d = t*t*t;
+    return [a*p[0]+b*p[2]+c*p[4]+d*p[6], a*p[1]+b*p[3]+c*p[5]+d*p[7]];
+  }
+  nodeStyle(x, y, r, state) {
+    const base = `position:absolute;left:${(x-r).toFixed(1)}px;top:${(y-r).toFixed(1)}px;width:${(r*2).toFixed(1)}px;height:${(r*2).toFixed(1)}px;border-radius:50%;`;
+    if (state === 'done') return base + `background:radial-gradient(circle,#cfeaff,#3aa6ff 60%,rgba(40,120,230,0) 74%);box-shadow:0 0 ${(r*2.2).toFixed(0)}px ${(r*0.4).toFixed(1)}px rgba(80,190,255,.6);`;
+    if (state === 'avail') return base + `background:radial-gradient(circle,#eaf6ff,#7bd0ff 52%,rgba(120,200,255,0) 74%);box-shadow:0 0 ${(r*2.6).toFixed(0)}px ${(r*0.5).toFixed(1)}px rgba(130,210,255,.55);`;
+    return base + `background:rgba(125,145,195,.16);border:1px solid rgba(135,155,205,.3);`;
+  }
+  sinePath(x1, y1, x2, y2, amp, waves) {
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const steps = Math.max(48, Math.round(waves * 14));
+    let d = '';
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const bx = x1 + dx * t, by = y1 + dy * t;
+      const off = Math.sin(t * waves * Math.PI * 2) * amp;
+      d += (i === 0 ? 'M' : 'L') + (bx + nx * off).toFixed(1) + ' ' + (by + ny * off).toFixed(1) + ' ';
+    }
+    return d.trim();
+  }
+  renderVals() {
+    const branches = [
+      [600,16, 360,180, 240,360, 150,460],
+      [600,16, 430,200, 320,430, 300,560],
+      [600,16, 520,220, 540,450, 470,628],
+      [600,16, 600,240, 660,470, 700,640],
+      [600,16, 690,210, 850,440, 920,590],
+      [600,16, 760,200, 1000,400, 1140,510],
+      [600,16, 700,160, 1010,300, 1190,420],
+    ];
+    const branchPaths = branches.map(p => `M ${p[0]} ${p[1]} C ${p[2]} ${p[3]}, ${p[4]} ${p[5]}, ${p[6]} ${p[7]}`);
+    const ts = [0.44, 0.6, 0.74, 0.86, 0.96];
+    const nodesA = [];
+    branches.forEach((p, bi) => {
+      ts.forEach((t, ti) => {
+        const pt = this.cbez(p, t);
+        let state = t < 0.64 ? 'done' : (t < 0.88 ? 'avail' : 'locked');
+        if (bi >= 5 && t > 0.5) state = 'locked';
+        if (bi <= 1 && t < 0.9) state = 'done';
+        const r = (ti === 1 || ti === 3) ? 7 : 4.5;
+        nodesA.push({ style: this.nodeStyle(pt[0], pt[1], r, state) });
+      });
+    });
+    return {
+      starsA: this.starfield(95, 1280, 720, 12345),
+      starsB: this.starfield(85, 1280, 720, 67890),
+      starsC: this.starfield(78, 1280, 720, 24680),
+      branchPaths, nodesA,
+      photonA: this.sinePath(478, 372, 802, 372, 11, 9),
+      photonCin: this.sinePath(168, 300, 442, 414, 10, 6),
+      photonCout: this.sinePath(826, 300, 1116, 184, 10, 6),
+      photonD: this.sinePath(478, 372, 802, 372, 11, 9),
+    };
+  }
+}
+</script>
+</body>
+</html>

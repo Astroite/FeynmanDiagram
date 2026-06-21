@@ -9,6 +9,7 @@ const LEVEL_PATHS := [
 	"res://level/levels/004_undo_redo.tres",
 	"res://level/levels/005_snap_to_socket.tres",
 	"res://level/levels/006_three_line_convergence.tres",
+	"res://level/levels/007_annihilation_gate.tres",
 ]
 
 

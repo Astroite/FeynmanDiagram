@@ -8,8 +8,8 @@ const DEFAULT_GLOW_COLOR := Color(0.70, 0.92, 1.0, 0.36)
 const DEFAULT_PULSE_COLOR := Color(1.0, 1.0, 1.0, 1.0)
 const DEFAULT_NODE_HANDLE_COLOR := Color(0.62, 0.90, 1.0, 0.95)
 const DEFAULT_ANCHOR_HANDLE_COLOR := Color(0.55, 0.62, 0.72, 0.85)
-const DEFAULT_LINE_WIDTH := 4.0
-const DEFAULT_GLOW_WIDTH := 14.0
+const DEFAULT_LINE_WIDTH := 3.0
+const DEFAULT_GLOW_WIDTH := 13.0
 const DEFAULT_PULSE_RADIUS := 5.5
 const DEFAULT_NODE_HANDLE_RADIUS := 9.0
 const DEFAULT_ANCHOR_HANDLE_RADIUS := 6.5
@@ -18,6 +18,8 @@ const DEFAULT_COMPLETION_DURATION := 3.0
 const CURVE_BAKE_INTERVAL := 8.0
 const PULSE_SEGMENTS := 18
 const HANDLE_SEGMENTS := 20
+const PHOTON_WAVE_AMPLITUDE := 10.0
+const PHOTON_WAVE_LENGTH := 26.0
 
 var graph_model: GraphModel = null
 var line_color := DEFAULT_LINE_COLOR
@@ -231,6 +233,8 @@ func _update_edge_view(edge: GraphEdge) -> void:
 	var baked_points := curve.get_baked_points()
 	if baked_points.is_empty() and edge.curve_points.size() == 1:
 		baked_points = PackedVector2Array([edge.curve_points[0].position])
+	var style := _edge_style(edge)
+	var draw_points := _wave_points(baked_points, PHOTON_WAVE_AMPLITUDE, PHOTON_WAVE_LENGTH) if style["is_wave"] else baked_points
 
 	var view: Dictionary = edge_views.get(edge.id, {})
 	var container: Node2D = view.get("container", null)
@@ -240,13 +244,15 @@ func _update_edge_view(edge: GraphEdge) -> void:
 		container = Node2D.new()
 		container.name = "Edge_%s" % String(edge.id)
 		add_child(container)
-		glow_line = _create_line(glow_width, glow_color, true)
-		line = _create_line(line_width, line_color, false)
+		glow_line = _create_line(style["glow_width"], style["glow_color"], style["glow_color"], true)
+		line = _create_line(style["line_width"], style["line_color"], style["glow_color"], false)
 		container.add_child(glow_line)
 		container.add_child(line)
 
-	glow_line.points = baked_points
-	line.points = baked_points
+	_apply_line_style(glow_line, style["glow_width"], style["glow_color"], style["glow_color"], true)
+	_apply_line_style(line, style["line_width"], style["line_color"], style["glow_color"], false)
+	glow_line.points = draw_points
+	line.points = draw_points
 	edge_views[edge.id] = {
 		"edge": edge,
 		"curve": curve,
@@ -298,23 +304,27 @@ func _clear_node_views() -> void:
 	node_views.clear()
 
 
-func _create_line(width: float, color: Color, is_glow: bool) -> Line2D:
+func _create_line(width: float, color: Color, glow: Color, is_glow: bool) -> Line2D:
 	var line := Line2D.new()
-	line.width = width
-	line.default_color = color
 	line.joint_mode = Line2D.LINE_JOINT_ROUND
 	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	line.end_cap_mode = Line2D.LINE_CAP_ROUND
 	line.antialiased = true
-	line.material = _create_line_material(is_glow)
+	_apply_line_style(line, width, color, glow, is_glow)
 	return line
 
 
-func _create_line_material(is_glow: bool) -> ShaderMaterial:
+func _apply_line_style(line: Line2D, width: float, color: Color, glow: Color, is_glow: bool) -> void:
+	line.width = width
+	line.default_color = color
+	line.material = _create_line_material(color, glow, is_glow)
+
+
+func _create_line_material(color: Color, glow: Color, is_glow: bool) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = GlowLineShader
-	material.set_shader_parameter("line_color", line_color)
-	material.set_shader_parameter("glow_color", glow_color)
+	material.set_shader_parameter("line_color", color)
+	material.set_shader_parameter("glow_color", glow)
 	material.set_shader_parameter("glow_strength", 1.45 if is_glow else 0.25)
 	material.set_shader_parameter("core_alpha", 0.38 if is_glow else 0.96)
 	return material
@@ -341,6 +351,60 @@ func _create_pulse_material() -> ShaderMaterial:
 	material.set_shader_parameter("glow_strength", 1.8)
 	material.set_shader_parameter("core_alpha", 1.0)
 	return material
+
+
+func _edge_style(edge: GraphEdge) -> Dictionary:
+	var particle := String(edge.particle_id)
+	match particle:
+		"electron":
+			return _style(Color(0.92, 0.96, 1.0, 0.96), Color(0.70, 0.86, 1.0, 0.40), false, line_width, glow_width)
+		"positron":
+			return _style(Color(0.78, 0.70, 1.0, 0.96), Color(0.62, 0.42, 1.0, 0.42), false, line_width, glow_width)
+		"muon":
+			return _style(Color(0.44, 0.88, 0.90, 0.96), Color(0.35, 0.92, 0.95, 0.38), false, line_width, glow_width)
+		"anti_muon":
+			return _style(Color(0.92, 0.96, 1.0, 0.96), Color(0.70, 0.86, 1.0, 0.38), false, line_width, glow_width)
+		"photon":
+			return _style(Color(0.66, 0.96, 1.0, 0.95), Color(0.30, 0.84, 1.0, 0.44), true, 2.4, glow_width + 2.0)
+		_:
+			return _style(line_color, glow_color, false, line_width, glow_width)
+
+
+func _style(core: Color, glow: Color, is_wave: bool, core_width: float, halo_width: float) -> Dictionary:
+	return {
+		"line_color": core,
+		"glow_color": glow,
+		"is_wave": is_wave,
+		"line_width": core_width,
+		"glow_width": halo_width,
+	}
+
+
+func _wave_points(points: PackedVector2Array, amplitude: float, wavelength: float) -> PackedVector2Array:
+	if points.size() < 2:
+		return points
+
+	var result := PackedVector2Array()
+	var phase_distance := 0.0
+	for index in range(points.size() - 1):
+		var start := points[index]
+		var finish := points[index + 1]
+		var segment := finish - start
+		var length := segment.length()
+		if length <= 0.001:
+			continue
+		var normal := Vector2(-segment.y, segment.x) / length
+		var steps: int = max(2, ceili(length / 6.0))
+		for step in range(steps):
+			if index > 0 and step == 0:
+				continue
+			var t := float(step) / float(steps)
+			var distance := phase_distance + length * t
+			var offset := sin(distance / wavelength * TAU) * amplitude
+			result.append(start.lerp(finish, t) + normal * offset)
+		phase_distance += length
+	result.append(points[points.size() - 1])
+	return result
 
 
 func _update_pulses(delta: float) -> void:

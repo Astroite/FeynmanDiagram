@@ -13,5 +13,8 @@ Open the editor:
 Run the GdUnit4 smoke suite headlessly:
 
 ```powershell
-..\\engine\\Godot_v4.6.2-stable_win64_console.exe --path . --headless -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests --ignoreHeadlessMode
+..\\scripts\\run_gdunit.ps1
 ```
+
+The script writes GdUnit4 reports to `user://gdunit-reports` with a small
+history cap, so generated reports do not accumulate under `res://reports/`.
