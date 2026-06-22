@@ -112,6 +112,36 @@ func can_redo() -> bool:
 	return false
 
 
+# Number of committed player actions (for the HUD's step counter).
+func step_count() -> int:
+	if curve_interaction != null and curve_interaction.get("undo_stack") != null:
+		return curve_interaction.undo_stack.undo_count()
+	return 0
+
+
+# Free (unplaced) half-edges, in stable edge order — the tray's placeable legs.
+func free_half_edges() -> Array:
+	var result: Array = []
+	if graph_model == null:
+		return result
+	for edge_id in graph_model.edges:
+		var edge: GraphEdge = graph_model.edges[edge_id]
+		for half_edge in edge.half_edges():
+			if not half_edge.has_endpoint():
+				result.append(half_edge)
+	return result
+
+
+func vertex_count() -> int:
+	var count := 0
+	if graph_model == null:
+		return count
+	for node in graph_model.nodes.values():
+		if node.kind == NodeKind.VERTEX:
+			count += 1
+	return count
+
+
 func set_visual_layer_visible(is_visible: bool) -> void:
 	_ensure_children()
 	if curve_renderer is CanvasItem:

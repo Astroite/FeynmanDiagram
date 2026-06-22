@@ -83,6 +83,23 @@ func disconnect_input_router() -> void:
 	_input_router = null
 
 
+# Start dragging a specific free half-edge programmatically (the tray placement
+# verb): the HUD picks the half-edge, then drives the gesture with
+# handle_pointer_moved / handle_pointer_up exactly like a world drag.
+func begin_half_edge_placement(half_edge: HalfEdge, world_pos: Vector2) -> bool:
+	_reset_gesture_state()
+	if graph_model == null or half_edge == null or half_edge.edge == null:
+		return false
+	_press_pos = world_pos
+	_current_pos = world_pos
+	_active_half_edge = half_edge
+	_active_edge = half_edge.edge
+	_gesture_kind = GestureKind.HALF_EDGE_DRAG
+	_edge_start_points = _duplicate_curve_points(_active_edge.curve_points)
+	_apply_half_edge_preview(world_pos)
+	return true
+
+
 # Begin a gesture: classify what was grabbed and snapshot the pre-drag state.
 func handle_pointer_down(world_pos: Vector2) -> void:
 	_reset_gesture_state()
