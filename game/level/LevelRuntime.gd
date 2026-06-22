@@ -12,6 +12,11 @@ var graph_model: GraphModel = null
 var curve_interaction: Node = null
 var curve_renderer: Node = null
 
+# The play area is the screen centre; the HUD lives in the corners. Every level's
+# diagram is translated so its bounding box centres here on load, honouring the
+# "middle is the play area" convention without hand-tuning each level's data.
+const PLAY_CENTER := Vector2(640.0, 340.0)
+
 var _is_complete := false
 var _ruleset := "topology"
 var _grammar := PhysicsGrammar.new()
@@ -161,7 +166,33 @@ func set_interaction_enabled(is_enabled: bool) -> void:
 func _install_model(model: GraphModel) -> void:
 	_disconnect_graph_model()
 	graph_model = model
+	_recenter(graph_model)
 	_connect_graph_model()
+
+
+# Translate the whole graph so its node bounding box centres on PLAY_CENTER. This
+# is a pure view-framing move done once on install: positions shift uniformly, so
+# topology, fermion flow and conservation (which never read geometry) are untouched.
+# Done by direct field writes, so no node_changed/edge_changed signals fire here.
+func _recenter(model: GraphModel) -> void:
+	if model == null or model.nodes.is_empty():
+		return
+
+	var min_p := Vector2.INF
+	var max_p := -Vector2.INF
+	for node in model.nodes.values():
+		min_p = min_p.min(node.position)
+		max_p = max_p.max(node.position)
+
+	var offset := PLAY_CENTER - (min_p + max_p) * 0.5
+	if offset.is_zero_approx():
+		return
+
+	for node in model.nodes.values():
+		node.position += offset
+	for edge: GraphEdge in model.edges.values():
+		for point: CurvePoint in edge.curve_points:
+			point.position += offset
 
 
 func _connect_graph_model() -> void:

@@ -17,9 +17,11 @@ func test_placing_free_leg_on_vertex_completes_level() -> void:
 	assert_int(runtime.vertex_count()).is_equal(2)
 
 	var interaction = runtime.curve_interaction
-	# V1's open socket is at (470, 372) in the level data.
-	var v1_socket := Vector2(470.0, 372.0)
-	assert_bool(interaction.begin_half_edge_placement(free[0], Vector2(300.0, 500.0))).is_true()
+	# V1 has the open socket; read its (recentred) world position from the model
+	# rather than hardcoding level-data coordinates.
+	var v1: RefCounted = runtime.graph_model.get_node(&"v1")
+	var v1_socket: Vector2 = v1.get_socket(&"socket_1").world_position()
+	assert_bool(interaction.begin_half_edge_placement(free[0], v1_socket + Vector2(-170.0, 130.0))).is_true()
 	interaction.handle_pointer_moved(v1_socket + Vector2(2.0, 1.0))
 	interaction.handle_pointer_up(v1_socket + Vector2(2.0, 1.0))
 
