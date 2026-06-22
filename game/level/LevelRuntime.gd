@@ -117,6 +117,21 @@ func can_redo() -> bool:
 	return false
 
 
+func has_selection() -> bool:
+	return curve_interaction != null and curve_interaction.has_method("has_selection") and curve_interaction.has_selection()
+
+
+func delete_selected() -> bool:
+	if curve_interaction != null and curve_interaction.has_method("delete_selected"):
+		return curve_interaction.delete_selected()
+	return false
+
+
+func _on_selection_changed(node: RefCounted, edge: GraphEdge) -> void:
+	if curve_renderer != null and curve_renderer.has_method("set_selection"):
+		curve_renderer.set_selection(node, edge)
+
+
 # Number of committed player actions (for the HUD's step counter).
 func step_count() -> int:
 	if curve_interaction != null and curve_interaction.get("undo_stack") != null:
@@ -235,6 +250,10 @@ func _ensure_children() -> void:
 		curve_renderer = CurveRendererScript.new()
 		curve_renderer.name = "CurveRenderer"
 		add_child(curve_renderer)
+
+	if curve_interaction != null and curve_interaction.has_signal("selection_changed"):
+		if not curve_interaction.selection_changed.is_connected(_on_selection_changed):
+			curve_interaction.selection_changed.connect(_on_selection_changed)
 
 
 func _inject_model() -> void:

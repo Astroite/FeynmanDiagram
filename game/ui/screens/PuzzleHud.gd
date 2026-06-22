@@ -33,6 +33,7 @@ var _name_label: Label
 var _status_label: Label
 var _undo_button: Button
 var _redo_button: Button
+var _delete_button: Button
 var _tray_pill: Panel
 var _token_box: HBoxContainer
 var _drag_chip: Panel
@@ -107,6 +108,14 @@ func _build() -> void:
 	restart_button.pressed.connect(_on_restart)
 	add_child(restart_button)
 
+	# Appears only when something is selected (an endpoint or a line).
+	_delete_button = UiFactory.icon_button("删")
+	UiFactory.place(_delete_button, Vector2(1062.0, 636.0))
+	_delete_button.tooltip_text = "删除选中 (Delete)"
+	_delete_button.visible = false
+	_delete_button.pressed.connect(_on_delete)
+	add_child(_delete_button)
+
 	_build_tray()
 	_build_overlays()
 
@@ -150,6 +159,7 @@ func _process(_delta: float) -> void:
 		return
 	_undo_button.disabled = not runtime.can_undo()
 	_redo_button.disabled = not runtime.can_redo()
+	_delete_button.visible = runtime.has_selection()
 	_update_status()
 
 
@@ -294,6 +304,11 @@ func _on_redo() -> void:
 func _on_restart() -> void:
 	if runtime != null and runtime.level_spec != null:
 		runtime.load_level(runtime.level_spec)
+
+
+func _on_delete() -> void:
+	if runtime != null:
+		runtime.delete_selected()
 
 
 # Honest hint for iteration 0: reveal the stored reference solution.

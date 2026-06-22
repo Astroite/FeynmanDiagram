@@ -38,7 +38,15 @@ var edge_views: Dictionary = {}
 var node_views: Dictionary = {}
 var render_revision := 0
 
+const SELECTION_COLOR := Color(1.0, 0.82, 0.38, 0.95)
+const SELECTION_RING_RADIUS := 15.0
+const SELECTION_EDGE_WIDTH := 9.0
+
 var _active_pulses: Array[Dictionary] = []
+var _selected_node: RefCounted = null
+var _selected_edge: GraphEdge = null
+var _selection_ring: Line2D = null
+var _selection_edge_line: Line2D = null
 
 
 func _process(delta: float) -> void:
@@ -71,6 +79,64 @@ func rebuild() -> void:
 	for edge: GraphEdge in graph_model.edges.values():
 		_update_edge_view(edge)
 	render_revision += 1
+	_update_selection_views()
+
+
+# Highlight the selected node (a ring) and/or selected edge (a wide translucent
+# underlay). Selection is presentation only — it never affects judging.
+func set_selection(node: RefCounted, edge: GraphEdge) -> void:
+	_selected_node = node
+	_selected_edge = edge
+	_update_selection_views()
+
+
+func _update_selection_views() -> void:
+	if _selection_ring == null:
+		_selection_ring = _create_selection_ring()
+		add_child(_selection_ring)
+	if _selected_node != null:
+		_selection_ring.visible = true
+		_selection_ring.position = _selected_node.position
+	else:
+		_selection_ring.visible = false
+
+	if _selection_edge_line == null:
+		_selection_edge_line = _create_selection_edge_line()
+		add_child(_selection_edge_line)
+	if _selected_edge != null and edge_views.has(_selected_edge.id):
+		_selection_edge_line.visible = true
+		_selection_edge_line.points = edge_views[_selected_edge.id]["line"].points
+	else:
+		_selection_edge_line.visible = false
+
+
+func _create_selection_ring() -> Line2D:
+	var ring := Line2D.new()
+	ring.z_index = 24
+	ring.width = 2.0
+	ring.default_color = SELECTION_COLOR
+	ring.antialiased = true
+	ring.closed = true
+	var points := PackedVector2Array()
+	for index in range(HANDLE_SEGMENTS):
+		var angle := TAU * float(index) / float(HANDLE_SEGMENTS)
+		points.append(Vector2(cos(angle), sin(angle)) * SELECTION_RING_RADIUS)
+	ring.points = points
+	ring.visible = false
+	return ring
+
+
+func _create_selection_edge_line() -> Line2D:
+	var line := Line2D.new()
+	line.z_index = -1
+	line.width = SELECTION_EDGE_WIDTH
+	line.default_color = Color(SELECTION_COLOR.r, SELECTION_COLOR.g, SELECTION_COLOR.b, 0.34)
+	line.joint_mode = Line2D.LINE_JOINT_ROUND
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.antialiased = true
+	line.visible = false
+	return line
 
 
 # A connected endpoint follows its node/socket: the node position is the truth, the
@@ -210,6 +276,8 @@ func _disconnect_model() -> void:
 func _on_edge_changed(edge: GraphEdge) -> void:
 	_update_edge_view(edge)
 	render_revision += 1
+	if edge == _selected_edge:
+		_update_selection_views()
 
 
 # Dragging a node moves its handle and drags along every edge endpoint wired to it.
@@ -219,6 +287,8 @@ func _on_node_changed(node) -> void:
 		if socket.occupied_by != null and socket.occupied_by.edge != null:
 			_update_edge_view(socket.occupied_by.edge)
 	render_revision += 1
+	if node == _selected_node or _selected_edge != null:
+		_update_selection_views()
 
 
 func _on_topology_changed() -> void:

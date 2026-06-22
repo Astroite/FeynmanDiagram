@@ -4,6 +4,14 @@ extends Node
 const BendEdgeCommandScript := preload("res://interaction/command/BendEdgeCommand.gd")
 const ConnectHalfEdgeCommandScript := preload("res://interaction/command/ConnectHalfEdgeCommand.gd")
 const MoveNodeCommandScript := preload("res://interaction/command/MoveNodeCommand.gd")
+const DeleteEdgeCommandScript := preload("res://interaction/command/DeleteEdgeCommand.gd")
+const DeleteNodeCommandScript := preload("res://interaction/command/DeleteNodeCommand.gd")
+
+# A press that releases within this distance of where it started is a tap (select),
+# not a drag (move / bend / connect).
+const TAP_DISTANCE := 6.0
+
+signal selection_changed(node: RefCounted, edge: GraphEdge)
 
 enum GestureKind { NONE, NODE_DRAG, EDGE_BEND, HALF_EDGE_DRAG }
 
@@ -18,6 +26,8 @@ const DEFAULT_SNAP_RADIUS := 32.0
 
 var graph_model: GraphModel = null
 var undo_stack := UndoStack.new()
+var selected_node: RefCounted = null
+var selected_edge: GraphEdge = null
 var node_hit_radius := DEFAULT_NODE_HIT_RADIUS
 var edge_hit_radius := DEFAULT_EDGE_HIT_RADIUS
 var half_edge_hit_radius := DEFAULT_HALF_EDGE_HIT_RADIUS
@@ -52,6 +62,7 @@ func configure(model: GraphModel, router: Node = null) -> CurveInteraction:
 
 func set_graph_model(model: GraphModel) -> void:
 	graph_model = model
+	clear_selection()
 
 
 func connect_input_router(router: Node = null) -> void:
@@ -68,6 +79,7 @@ func connect_input_router(router: Node = null) -> void:
 	_connect_router_signal(&"undo", Callable(self, "undo"))
 	_connect_router_signal(&"redo", Callable(self, "redo"))
 	_connect_router_signal(&"cancel", Callable(self, "cancel_gesture"))
+	_connect_router_signal(&"delete", Callable(self, "delete_selected"))
 
 
 func disconnect_input_router() -> void:
@@ -80,6 +92,7 @@ func disconnect_input_router() -> void:
 	_disconnect_router_signal(&"undo", Callable(self, "undo"))
 	_disconnect_router_signal(&"redo", Callable(self, "redo"))
 	_disconnect_router_signal(&"cancel", Callable(self, "cancel_gesture"))
+	_disconnect_router_signal(&"delete", Callable(self, "delete_selected"))
 	_input_router = null
 
 
@@ -145,9 +158,16 @@ func handle_pointer_moved(world_pos: Vector2) -> void:
 			_apply_half_edge_preview(world_pos)
 
 
-# End a gesture: rewind the live preview, then commit the net change as ONE command.
+# End a gesture. A near-zero move is a tap → select what's under the cursor and
+# discard any live preview; a real move commits the net change as ONE command.
 func handle_pointer_up(world_pos: Vector2) -> void:
 	_current_pos = world_pos
+
+	if world_pos.distance_to(_press_pos) < TAP_DISTANCE:
+		_rewind_preview()
+		_reset_gesture_state()
+		_select_at(world_pos)
+		return
 
 	match _gesture_kind:
 		GestureKind.NODE_DRAG:
@@ -158,6 +178,92 @@ func handle_pointer_up(world_pos: Vector2) -> void:
 			_commit_half_edge_drag(world_pos)
 
 	_reset_gesture_state()
+
+
+# Selection: a single click highlights the node/endpoint or line under the cursor;
+# clicking empty space clears it. Nodes win over edges; anchors are selectable
+# (unlike for dragging) so endpoints can be highlighted and deleted.
+func _select_at(world_pos: Vector2) -> void:
+	var node = _hit_test_any_node(world_pos)
+	if node != null:
+		select_node(node)
+		return
+	var edge := hit_test_edge(world_pos)
+	if edge != null:
+		select_edge(edge)
+		return
+	clear_selection()
+
+
+func select_node(node: RefCounted) -> void:
+	selected_node = node
+	selected_edge = null
+	selection_changed.emit(selected_node, selected_edge)
+
+
+func select_edge(edge: GraphEdge) -> void:
+	selected_node = null
+	selected_edge = edge
+	selection_changed.emit(selected_node, selected_edge)
+
+
+func clear_selection() -> void:
+	if selected_node == null and selected_edge == null:
+		return
+	selected_node = null
+	selected_edge = null
+	selection_changed.emit(null, null)
+
+
+func has_selection() -> bool:
+	return selected_node != null or selected_edge != null
+
+
+# Delete the current selection (a line, or an endpoint plus its incident lines) as
+# one undoable step, then clear the selection.
+func delete_selected() -> bool:
+	if graph_model == null:
+		return false
+	var command: Command = null
+	if selected_edge != null:
+		command = DeleteEdgeCommandScript.new().configure(graph_model, selected_edge)
+	elif selected_node != null:
+		command = DeleteNodeCommandScript.new().configure(graph_model, selected_node)
+	if command == null:
+		return false
+	if not undo_stack.push(command):
+		return false
+	clear_selection()
+	return true
+
+
+# Undo any live preview started on press (a nudged node, an inserted bend point)
+# without committing it — used when a press turns out to be a tap.
+func _rewind_preview() -> void:
+	if graph_model == null:
+		return
+	match _gesture_kind:
+		GestureKind.NODE_DRAG:
+			if _active_node != null:
+				graph_model.move_node(_active_node, _node_start_pos)
+		GestureKind.EDGE_BEND, GestureKind.HALF_EDGE_DRAG:
+			if _active_edge != null:
+				graph_model.set_curve_points(_active_edge, _edge_start_points)
+
+
+# Like hit_test_node but includes anchors (locked nodes), since selection — unlike
+# dragging — may target a fixed endpoint.
+func _hit_test_any_node(world_pos: Vector2):
+	if graph_model == null:
+		return null
+	var best = null
+	var best_distance := node_hit_radius
+	for node in graph_model.nodes.values():
+		var distance := world_pos.distance_to(node.position)
+		if distance <= best_distance:
+			best = node
+			best_distance = distance
+	return best
 
 
 func undo() -> bool:

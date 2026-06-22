@@ -6,6 +6,7 @@ signal pointer_up(world_pos: Vector2)
 signal undo()
 signal redo()
 signal cancel()
+signal delete()
 
 var _mouse_pressed := false
 var _active_touch_index := -1
@@ -41,6 +42,9 @@ func screen_to_world(screen_pos: Vector2) -> Vector2:
 func _route_shortcut(event: InputEvent) -> bool:
 	if event is InputEventKey and event.echo:
 		return false
+	if event is InputEventKey and event.pressed and (event.keycode == KEY_DELETE or event.keycode == KEY_BACKSPACE):
+		delete.emit()
+		return true
 	if event.is_action_pressed("ui_undo"):
 		undo.emit()
 		return true
