@@ -13,6 +13,8 @@ var curve_interaction: Node = null
 var curve_renderer: Node = null
 
 var _is_complete := false
+var _ruleset := "topology"
+var _grammar := PhysicsGrammar.new()
 
 
 func load_level(spec: Resource) -> bool:
@@ -20,6 +22,7 @@ func load_level(spec: Resource) -> bool:
 		return false
 
 	level_spec = spec
+	_ruleset = String(spec.ruleset) if "ruleset" in spec else "topology"
 	_install_model(spec.create_model_from_givens())
 	_is_complete = false
 	_ensure_children()
@@ -47,19 +50,37 @@ func apply_reference_solution() -> bool:
 	return true
 
 
-# A level is solved purely on topology: the graph must be connected with no dangling
-# half-edges (doc01 §4.4). Geometry never participates — there are no spatial objectives.
+# A level is solved by physics rules only, never geometry (doc01 §4.4). Topology
+# levels need a connected, dangling-free graph; QED levels additionally need every
+# vertex to match the QED template with continuous fermion flow.
 func evaluate_completeness() -> bool:
 	if graph_model == null:
 		return false
 
-	var complete := graph_model.is_complete()
+	var complete := _compute_complete()
 	if complete and not _is_complete:
 		_is_complete = true
 		if curve_renderer != null and curve_renderer.has_method("play_completion"):
 			curve_renderer.play_completion()
 		level_complete.emit(level_spec)
 	return _is_complete
+
+
+func _compute_complete() -> bool:
+	if _ruleset == "qed":
+		return _grammar.validate(graph_model)["ok"]
+	return graph_model.is_complete()
+
+
+# Player-facing validation state for the HUD: { ok, stage, message, node_id }.
+func validation_status() -> Dictionary:
+	if graph_model == null:
+		return {"ok": false, "stage": "integrity", "message": "尚未载入关卡", "node_id": &""}
+	if _ruleset == "qed":
+		return _grammar.validate(graph_model)
+	if graph_model.is_complete():
+		return {"ok": true, "stage": "ok", "message": "拓扑完整 · 图已连通，无悬挂半边", "node_id": &""}
+	return {"ok": false, "stage": "integrity", "message": "把所有谱线连成一张连通的图", "node_id": &""}
 
 
 func is_level_complete() -> bool:

@@ -3,6 +3,9 @@ extends Resource
 
 @export var level_id: StringName = &""
 @export var title := ""
+# Which validator judges this level: "topology" (iteration-0 connect-and-tidy) or
+# "qed" (PhysicsGrammar: vertex template + fermion flow + conservation).
+@export var ruleset := "topology"
 # Player-facing, localized display strings (game language is Chinese). Internal
 # level_id / title stay English. Both fall back gracefully when left empty.
 @export var display_code := "" # short chapter/index label, e.g. "序章 · 07"

@@ -94,15 +94,16 @@ func _process(delta: float) -> void:
 
 
 func _update_status() -> void:
-	if _flash > 0.0:
-		_status_label.text = "还不完整 · 仍有未连接的端点"
-		_status_label.add_theme_color_override("font_color", UiTheme.WARNING)
-	elif runtime.is_level_complete():
-		_status_label.text = "拓扑完整 · 图已连通，无悬挂半边"
-		_status_label.add_theme_color_override("font_color", UiTheme.GREEN)
-	else:
-		_status_label.text = "把所有谱线连成一张连通的图"
-		_status_label.add_theme_color_override("font_color", UiTheme.MUTED)
+	# The message is the real validator output (topology or QED): on failure it
+	# names the offending rule/vertex, e.g. "顶点 V1 费米子流向不连续".
+	var status := runtime.validation_status()
+	_status_label.text = String(status["message"])
+	var color := UiTheme.MUTED
+	if status["ok"]:
+		color = UiTheme.GREEN
+	elif _flash > 0.0:
+		color = UiTheme.WARNING
+	_status_label.add_theme_color_override("font_color", color)
 
 
 func _refresh_header() -> void:
