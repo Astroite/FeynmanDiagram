@@ -12,6 +12,7 @@ var runtime: LevelRuntime = null
 var _catalog := LevelCatalog.new()
 var _screen := Screen.MENU
 var _last_played: Resource = null
+var _transition: Tween = null
 
 var _menu: MenuScreen
 var _level_select: LevelSelectScreen
@@ -42,10 +43,8 @@ func bind_level_runtime(value: LevelRuntime) -> void:
 
 
 func _build_screens() -> void:
-	_menu = MenuScreen.new()
-	_menu.start_pressed.connect(_on_start)
-	_menu.continue_pressed.connect(_on_continue)
-	_menu.levels_pressed.connect(func(): _show(Screen.LEVEL_SELECT))
+	_menu = preload("res://ui/screens/MenuScreen.tscn").instantiate()
+	_menu.enter_pressed.connect(func(): _show(Screen.LEVEL_SELECT))
 	add_child(_menu)
 
 	_level_select = LevelSelectScreen.new()
@@ -87,7 +86,6 @@ func _start_level(spec: Resource) -> void:
 		return
 	runtime.load_level(spec)
 	_last_played = spec
-	_menu.set_can_continue(true)
 	_show(Screen.PUZZLE)
 
 
@@ -100,13 +98,74 @@ func _on_level_complete(spec: Resource) -> void:
 	_show(Screen.VICTORY)
 
 
+# Screen changes cross-fade with a subtle camera-push (the new screen rises from
+# slightly zoomed-out while the old one fades and pushes past) instead of a hard
+# cut. State (_screen) and gameplay visibility update synchronously; only the
+# visuals animate, so navigation logic and tests are unaffected.
 func _show(screen: int) -> void:
+	var previous := _screen_node(_screen)
 	_screen = screen
-	_menu.visible = screen == Screen.MENU
-	_level_select.visible = screen == Screen.LEVEL_SELECT
-	_puzzle.visible = screen == Screen.PUZZLE
-	_victory.visible = screen == Screen.VICTORY
 	_sync_runtime_visibility()
+
+	var target := _screen_node(screen)
+	if _transition != null and _transition.is_valid():
+		_transition.kill()
+	if previous == target:
+		_present_instant(target)
+	else:
+		_present_transition(previous, target)
+
+
+func _screen_node(screen: int) -> Control:
+	match screen:
+		Screen.LEVEL_SELECT:
+			return _level_select
+		Screen.PUZZLE:
+			return _puzzle
+		Screen.VICTORY:
+			return _victory
+		_:
+			return _menu
+
+
+func _all_screens() -> Array:
+	return [_menu, _level_select, _puzzle, _victory]
+
+
+func _present_instant(target: Control) -> void:
+	for s: Control in _all_screens():
+		s.visible = s == target
+		s.modulate.a = 1.0
+		s.scale = Vector2.ONE
+
+
+func _present_transition(previous: Control, target: Control) -> void:
+	for s: Control in _all_screens():
+		if s != previous and s != target:
+			s.visible = false
+			s.modulate.a = 1.0
+			s.scale = Vector2.ONE
+
+	var center := size * 0.5
+	previous.pivot_offset = center
+	target.pivot_offset = center
+	previous.visible = true
+	previous.modulate.a = 1.0
+	previous.scale = Vector2.ONE
+	target.visible = true
+	target.modulate.a = 0.0
+	target.scale = Vector2(0.94, 0.94)
+
+	_transition = create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_transition.tween_property(target, "modulate:a", 1.0, 0.32)
+	_transition.tween_property(target, "scale", Vector2.ONE, 0.40)
+	_transition.tween_property(previous, "modulate:a", 0.0, 0.26)
+	_transition.tween_property(previous, "scale", Vector2(1.06, 1.06), 0.40)
+	_transition.chain().tween_callback(func():
+		previous.visible = false
+		previous.modulate.a = 1.0
+		previous.scale = Vector2.ONE
+	)
 
 
 # Gameplay rendering + interaction are live only on the puzzle screen.

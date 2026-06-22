@@ -1,0 +1,72 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://ui/screens/MenuScreen.gd" id="1_menu"]
+
+[sub_resource type="StyleBoxFlat" id="PlayNormal"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.88, 0.93, 1, 0.78)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+
+[sub_resource type="StyleBoxFlat" id="PlayHover"]
+bg_color = Color(1, 1, 1, 0.1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+
+[sub_resource type="StyleBoxFlat" id="PlayPressed"]
+bg_color = Color(1, 1, 1, 0.16)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+
+[node name="MenuScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_menu")
+
+[node name="TitleArt" type="Control" parent="."]
+layout_mode = 0
+offset_left = 240.0
+offset_top = 150.0
+offset_right = 1040.0
+offset_bottom = 400.0
+mouse_filter = 2
+
+[node name="PlayButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 592.0
+offset_top = 470.0
+offset_right = 688.0
+offset_bottom = 566.0
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("PlayNormal")
+theme_override_styles/hover = SubResource("PlayHover")
+theme_override_styles/pressed = SubResource("PlayPressed")
+theme_override_styles/focus = SubResource("PlayNormal")
+text = "▶"
