@@ -1,7 +1,5 @@
 extends Node2D
 
-@export_file("*.tres") var debug_level_path := "res://level/levels/007_annihilation_gate.tres"
-
 @onready var level_runtime: LevelRuntime = $LevelRuntime
 @onready var quantum_hud: QuantumHud = $QuantumHud
 
@@ -12,15 +10,7 @@ var _time := 0.0
 func _ready() -> void:
 	_stars = _build_starfield(110, 1280.0, 720.0, 314159)
 	set_process(true)
-	var spec := load(debug_level_path)
-	if spec == null:
-		push_error("Failed to load debug level: %s" % debug_level_path)
-		return
-	if not level_runtime.load_level(spec):
-		push_error("Failed to start debug level: %s" % debug_level_path)
-		return
-
-	level_runtime.level_complete.connect(func(loaded_spec): print("Level complete: ", loaded_spec.level_id))
+	# The HUD opens on the menu and loads levels on demand from the catalog.
 	quantum_hud.bind_level_runtime(level_runtime)
 	queue_redraw()
 

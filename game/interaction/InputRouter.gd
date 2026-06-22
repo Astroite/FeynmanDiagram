@@ -11,7 +11,9 @@ var _mouse_pressed := false
 var _active_touch_index := -1
 
 
-func _input(event: InputEvent) -> void:
+# Gameplay listens on the unhandled-input pass so GUI Controls (the HUD) consume
+# clicks they own first; only events the UI ignored reach curve interaction.
+func _unhandled_input(event: InputEvent) -> void:
 	route_input(event)
 
 

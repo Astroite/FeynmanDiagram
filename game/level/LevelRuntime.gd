@@ -66,6 +66,31 @@ func is_level_complete() -> bool:
 	return _is_complete
 
 
+# HUD-driven undo/redo (the same stack the keyboard shortcuts use).
+func undo() -> bool:
+	if curve_interaction != null and curve_interaction.has_method("undo"):
+		return curve_interaction.undo()
+	return false
+
+
+func redo() -> bool:
+	if curve_interaction != null and curve_interaction.has_method("redo"):
+		return curve_interaction.redo()
+	return false
+
+
+func can_undo() -> bool:
+	if curve_interaction != null and curve_interaction.get("undo_stack") != null:
+		return curve_interaction.undo_stack.can_undo()
+	return false
+
+
+func can_redo() -> bool:
+	if curve_interaction != null and curve_interaction.get("undo_stack") != null:
+		return curve_interaction.undo_stack.can_redo()
+	return false
+
+
 func set_visual_layer_visible(is_visible: bool) -> void:
 	_ensure_children()
 	if curve_renderer is CanvasItem:
