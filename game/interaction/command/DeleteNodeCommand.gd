@@ -45,6 +45,7 @@ static func _serialize_node(node: RefCounted) -> Dictionary:
 		"id": String(node.id),
 		"kind": node.kind,
 		"position": [node.position.x, node.position.y],
+		"particle_id": String(node.particle_id),
 		"sockets": sockets,
 	}
 
@@ -70,6 +71,7 @@ static func _restore_node(model: GraphModel, data: Dictionary) -> void:
 	)
 	if node == null:
 		return
+	node.particle_id = StringName(str(data.get("particle_id", "")))
 	var sockets: Array = data["sockets"]
 	for index in range(sockets.size()):
 		node.sockets[index].id = StringName(sockets[index]["id"])

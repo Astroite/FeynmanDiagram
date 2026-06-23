@@ -3,6 +3,7 @@ extends Node
 
 const BendEdgeCommandScript := preload("res://interaction/command/BendEdgeCommand.gd")
 const ConnectHalfEdgeCommandScript := preload("res://interaction/command/ConnectHalfEdgeCommand.gd")
+const CreateEdgeCommandScript := preload("res://interaction/command/CreateEdgeCommand.gd")
 const MoveNodeCommandScript := preload("res://interaction/command/MoveNodeCommand.gd")
 const DeleteEdgeCommandScript := preload("res://interaction/command/DeleteEdgeCommand.gd")
 const DeleteNodeCommandScript := preload("res://interaction/command/DeleteNodeCommand.gd")
@@ -11,14 +12,27 @@ const DeleteNodeCommandScript := preload("res://interaction/command/DeleteNodeCo
 # not a drag (move / bend / connect).
 const TAP_DISTANCE := 6.0
 
+# Hold this long on a seeded endpoint (without moving past TAP_DISTANCE) to charge
+# the long-press and start pulling a new line out of it.
+const CHARGE_TIME := 0.3
+
 signal selection_changed(node: RefCounted, edge: GraphEdge)
 
-enum GestureKind { NONE, NODE_DRAG, EDGE_BEND, HALF_EDGE_DRAG }
+# Long-press charge feedback: t in [0,1]; (null, 0.0) clears the ring.
+signal charge_progress(node: RefCounted, t: float)
+
+# Live draw-arc preview: the renderer draws a transient arc from source_pos to
+# cursor_pos (snapped to a socket when `snapped`). `active` false clears it.
+signal draw_arc_changed(active: bool, source_pos: Vector2, cursor_pos: Vector2, snapped: bool, particle_id: StringName)
+
+enum GestureKind { NONE, NODE_DRAG, EDGE_BEND, HALF_EDGE_DRAG, LONG_PRESS_CHARGING, DRAW_ARC }
 
 const GESTURE_NONE := GestureKind.NONE
 const GESTURE_NODE_DRAG := GestureKind.NODE_DRAG
 const GESTURE_EDGE_BEND := GestureKind.EDGE_BEND
 const GESTURE_HALF_EDGE_DRAG := GestureKind.HALF_EDGE_DRAG
+const GESTURE_LONG_PRESS_CHARGING := GestureKind.LONG_PRESS_CHARGING
+const GESTURE_DRAW_ARC := GestureKind.DRAW_ARC
 const DEFAULT_NODE_HIT_RADIUS := 18.0
 const DEFAULT_EDGE_HIT_RADIUS := 10.0
 const DEFAULT_HALF_EDGE_HIT_RADIUS := 18.0
@@ -38,6 +52,9 @@ var _gesture_kind := GestureKind.NONE
 var _active_node: RefCounted = null
 var _active_edge: GraphEdge = null
 var _active_half_edge: HalfEdge = null
+var _draw_source: RefCounted = null
+var _charge_elapsed := 0.0
+var _charge_ready := false
 var _press_pos := Vector2.ZERO
 var _current_pos := Vector2.ZERO
 var _node_start_pos := Vector2.ZERO
@@ -46,7 +63,19 @@ var _bend_point_index := -1
 
 
 func _ready() -> void:
+	set_process(true)
 	connect_input_router()
+
+
+# Advance the long-press charge while the player holds still on a seeded endpoint.
+func _process(delta: float) -> void:
+	if _gesture_kind != GestureKind.LONG_PRESS_CHARGING:
+		return
+	_charge_elapsed += delta
+	var t: float = clamp(_charge_elapsed / CHARGE_TIME, 0.0, 1.0)
+	charge_progress.emit(_draw_source, t)
+	if _charge_elapsed >= CHARGE_TIME:
+		_begin_draw_arc()
 
 
 func _exit_tree() -> void:
@@ -121,6 +150,20 @@ func handle_pointer_down(world_pos: Vector2) -> void:
 	_press_pos = world_pos
 	_current_pos = world_pos
 
+	# A seeded endpoint can grow a new line: start charging a long-press. If the node
+	# is also movable and the pointer moves past TAP_DISTANCE before the charge fills,
+	# the gesture demotes to a reposition drag (see handle_pointer_moved).
+	var seeded = _hit_test_seeded_node(world_pos)
+	if seeded != null:
+		_draw_source = seeded
+		_active_node = seeded
+		_node_start_pos = seeded.position
+		_gesture_kind = GestureKind.LONG_PRESS_CHARGING
+		_charge_elapsed = 0.0
+		_charge_ready = false
+		charge_progress.emit(seeded, 0.0)
+		return
+
 	_active_node = hit_test_node(world_pos)
 	if _active_node != null:
 		_gesture_kind = GestureKind.NODE_DRAG
@@ -156,6 +199,11 @@ func handle_pointer_moved(world_pos: Vector2) -> void:
 			_apply_bend_preview(world_pos)
 		GestureKind.HALF_EDGE_DRAG:
 			_apply_half_edge_preview(world_pos)
+		GestureKind.LONG_PRESS_CHARGING:
+			if world_pos.distance_to(_press_pos) > TAP_DISTANCE:
+				_demote_charge(world_pos)
+		GestureKind.DRAW_ARC:
+			_apply_draw_preview(world_pos)
 
 
 # End a gesture. A near-zero move is a tap → select what's under the cursor and
@@ -163,7 +211,15 @@ func handle_pointer_moved(world_pos: Vector2) -> void:
 func handle_pointer_up(world_pos: Vector2) -> void:
 	_current_pos = world_pos
 
+	if _gesture_kind == GestureKind.DRAW_ARC:
+		charge_progress.emit(null, 0.0)
+		_commit_draw_arc(world_pos)
+		draw_arc_changed.emit(false, Vector2.ZERO, Vector2.ZERO, false, &"")
+		_reset_gesture_state()
+		return
+
 	if world_pos.distance_to(_press_pos) < TAP_DISTANCE:
+		charge_progress.emit(null, 0.0)
 		_rewind_preview()
 		_reset_gesture_state()
 		_select_at(world_pos)
@@ -177,6 +233,7 @@ func handle_pointer_up(world_pos: Vector2) -> void:
 		GestureKind.HALF_EDGE_DRAG:
 			_commit_half_edge_drag(world_pos)
 
+	charge_progress.emit(null, 0.0)
 	_reset_gesture_state()
 
 
@@ -284,6 +341,9 @@ func cancel_gesture() -> void:
 			GestureKind.EDGE_BEND, GestureKind.HALF_EDGE_DRAG:
 				if _active_edge != null:
 					graph_model.set_curve_points(_active_edge, _edge_start_points)
+	if _gesture_kind == GestureKind.LONG_PRESS_CHARGING or _gesture_kind == GestureKind.DRAW_ARC:
+		charge_progress.emit(null, 0.0)
+		draw_arc_changed.emit(false, Vector2.ZERO, Vector2.ZERO, false, &"")
 	_reset_gesture_state()
 
 
@@ -391,6 +451,96 @@ func half_edge_endpoint_position(half_edge: HalfEdge) -> Vector2:
 	if half_edge == edge.half_edge_a:
 		return edge.curve_points[0].position
 	return edge.curve_points[edge.curve_points.size() - 1].position
+
+
+# A seeded endpoint (one carrying a particle_id) is the source a new line is pulled
+# from. Includes anchors: external endpoints are locked against dragging but can
+# still grow a line. Returns the nearest seeded node within node_hit_radius, else null.
+func _hit_test_seeded_node(world_pos: Vector2):
+	if graph_model == null:
+		return null
+	var best = null
+	var best_distance := node_hit_radius
+	for node in graph_model.nodes.values():
+		if String(node.particle_id).is_empty():
+			continue
+		if _first_free_socket(node) == null:
+			continue
+		var distance := world_pos.distance_to(node.position)
+		if distance <= best_distance:
+			best = node
+			best_distance = distance
+	return best
+
+
+# Charge filled: switch from holding still to actively dragging the new line out.
+func _begin_draw_arc() -> void:
+	_gesture_kind = GestureKind.DRAW_ARC
+	_charge_ready = true
+	charge_progress.emit(_draw_source, 1.0)
+	_apply_draw_preview(_current_pos)
+
+
+# The pointer moved before the charge filled: abandon the long-press. If the seeded
+# node is also movable, fall through to a reposition drag; otherwise the gesture ends.
+func _demote_charge(world_pos: Vector2) -> void:
+	charge_progress.emit(null, 0.0)
+	var node = _draw_source
+	_draw_source = null
+	_charge_elapsed = 0.0
+	_charge_ready = false
+	if _is_node_movable(node):
+		_active_node = node
+		_gesture_kind = GestureKind.NODE_DRAG
+		_apply_node_preview(world_pos)
+	else:
+		_active_node = null
+		_gesture_kind = GestureKind.NONE
+
+
+# Renderer-only preview of the line being pulled: from the source socket to the
+# cursor, snapping to the nearest free socket on another node. The model is NOT
+# mutated here — no temp edge exists until release commits one.
+func _apply_draw_preview(world_pos: Vector2) -> void:
+	if _draw_source == null:
+		return
+	var source_socket := _first_free_socket(_draw_source)
+	var source_pos: Vector2 = source_socket.world_position() if source_socket != null else _draw_source.position
+	var snap := find_snap_socket(world_pos, snap_radius)
+	var snapped: bool = not snap.is_empty() and snap["node"] != _draw_source
+	var cursor: Vector2 = snap["socket"].world_position() if snapped else world_pos
+	draw_arc_changed.emit(true, source_pos, cursor, snapped, _draw_source.particle_id)
+
+
+# Release: if the cursor is snapped to a free socket on another node, create the new
+# line (source -> target) as one undoable CreateEdgeCommand. Otherwise do nothing.
+func _commit_draw_arc(world_pos: Vector2) -> void:
+	if graph_model == null or _draw_source == null:
+		return
+	var source_socket := _first_free_socket(_draw_source)
+	if source_socket == null:
+		return
+	var snap := find_snap_socket(world_pos, snap_radius)
+	if snap.is_empty() or snap["node"] == _draw_source:
+		return
+	undo_stack.push(CreateEdgeCommandScript.new().configure(
+		graph_model,
+		_draw_source.particle_id,
+		_draw_source,
+		source_socket,
+		snap["node"],
+		snap["socket"]
+	))
+
+
+# First socket on this node with no half-edge attached, else null.
+func _first_free_socket(node) -> Socket:
+	if node == null:
+		return null
+	for socket: Socket in node.sockets:
+		if socket.occupied_by == null:
+			return socket
+	return null
 
 
 func _apply_node_preview(world_pos: Vector2) -> void:
@@ -531,6 +681,9 @@ func _reset_gesture_state() -> void:
 	_active_node = null
 	_active_edge = null
 	_active_half_edge = null
+	_draw_source = null
+	_charge_elapsed = 0.0
+	_charge_ready = false
 	_bend_point_index = -1
 	_edge_start_points.clear()
 

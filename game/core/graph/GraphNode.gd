@@ -5,6 +5,10 @@ var id: StringName
 var kind: int = NodeKind.VERTEX
 var position: Vector2 = Vector2.ZERO
 var sockets: Array[Socket] = []
+# The particle "seed" stationed at this endpoint: the source identity a player-drawn
+# line inherits when it is pulled out from here. Empty for plain (unseeded) nodes.
+# Presentation/authoring hint only — judging reads edge/half-edge ids, never this.
+var particle_id: StringName = &""
 
 
 func configure(initial_id: StringName, initial_kind: int, initial_position: Vector2):

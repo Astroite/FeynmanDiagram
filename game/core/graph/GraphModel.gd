@@ -175,6 +175,7 @@ func to_dict() -> Dictionary:
 			"id": String(node.id),
 			"kind": node.kind,
 			"position": CurvePoint._vector_to_dict(node.position),
+			"particle_id": String(node.particle_id),
 			"sockets": socket_entries,
 		})
 
@@ -214,6 +215,7 @@ static func from_dict(data: Dictionary) -> GraphModel:
 			CurvePoint._vector_from_dict(node_data.get("position", {})),
 			socket_offsets
 		)
+		node.particle_id = StringName(str(node_data.get("particle_id", "")))
 		for index in range(socket_ids.size()):
 			node.sockets[index].id = socket_ids[index]
 
