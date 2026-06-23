@@ -89,6 +89,43 @@ func test_node_move_drags_handle_and_connected_edge_endpoint() -> void:
 	assert_that(renderer.sample_by_arc_length(renderer.get_curve(edge), 1.0)).is_equal(Vector2(140.0, 30.0))
 
 
+func test_charge_ring_shows_at_node_and_clears() -> void:
+	var model := GraphModel.new()
+	var node = model.add_node(&"seed", NodeKind.ANCHOR, Vector2(70.0, 40.0))
+	var renderer := _renderer()
+	renderer.set_graph_model(model)
+
+	renderer.set_charge(node, 0.5)
+	assert_bool(renderer._charge_ring.visible).is_true()
+	assert_that(renderer._charge_ring.position).is_equal(Vector2(70.0, 40.0))
+	# A half-charge arc is shorter than a full one.
+	var half_points := renderer._charge_ring.points.size()
+	renderer.set_charge(node, 1.0)
+	assert_int(renderer._charge_ring.points.size()).is_greater(half_points)
+
+	renderer.set_charge(null, 0.0)
+	assert_bool(renderer._charge_ring.visible).is_false()
+
+
+func test_draw_arc_preview_tracks_source_cursor_and_snap() -> void:
+	var renderer := _renderer()
+	renderer.set_graph_model(GraphModel.new())
+
+	renderer.set_draw_arc(true, Vector2.ZERO, Vector2(100.0, 0.0), false, &"electron")
+	assert_bool(renderer._preview_line.visible).is_true()
+	assert_that(renderer._preview_line.points[0]).is_equal(Vector2.ZERO)
+	assert_that(renderer._preview_line.points[1]).is_equal(Vector2(100.0, 0.0))
+	assert_bool(renderer._snap_ring.visible).is_false()
+
+	renderer.set_draw_arc(true, Vector2.ZERO, Vector2(90.0, 10.0), true, &"electron")
+	assert_bool(renderer._snap_ring.visible).is_true()
+	assert_that(renderer._snap_ring.position).is_equal(Vector2(90.0, 10.0))
+
+	renderer.set_draw_arc(false, Vector2.ZERO, Vector2.ZERO, false, &"")
+	assert_bool(renderer._preview_line.visible).is_false()
+	assert_bool(renderer._snap_ring.visible).is_false()
+
+
 func _renderer() -> CurveRenderer:
 	var renderer := CurveRenderer.new()
 	auto_free(renderer)

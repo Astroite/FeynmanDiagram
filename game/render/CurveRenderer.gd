@@ -42,11 +42,26 @@ const SELECTION_COLOR := Color(1.0, 0.82, 0.38, 0.95)
 const SELECTION_RING_RADIUS := 15.0
 const SELECTION_EDGE_WIDTH := 9.0
 
+# Long-press charge ring: an arc around the seeded endpoint that fills as the charge
+# builds (t in [0,1]). Draw-arc preview: a transient line from the source socket to
+# the cursor, tinted by the source particle and brightened when snapped to a socket.
+const CHARGE_RING_RADIUS := 21.0
+const CHARGE_RING_WIDTH := 3.0
+const CHARGE_RING_SEGMENTS := 40
+const CHARGE_COLOR := Color(1.0, 0.86, 0.42, 0.95)
+const SNAP_RING_RADIUS := 13.0
+const SNAP_RING_WIDTH := 2.5
+const SNAP_COLOR := Color(0.55, 1.0, 0.72, 0.95)
+
 var _active_pulses: Array[Dictionary] = []
 var _selected_node: RefCounted = null
 var _selected_edge: GraphEdge = null
 var _selection_ring: Line2D = null
 var _selection_edge_line: Line2D = null
+var _charge_ring: Line2D = null
+var _preview_glow: Line2D = null
+var _preview_line: Line2D = null
+var _snap_ring: Line2D = null
 
 
 func _process(delta: float) -> void:
@@ -108,6 +123,92 @@ func _update_selection_views() -> void:
 		_selection_edge_line.points = edge_views[_selected_edge.id]["line"].points
 	else:
 		_selection_edge_line.visible = false
+
+
+# Long-press charge feedback: draw an arc around `node` that fills from 0 to t. A
+# null node (or t <= 0) hides the ring. Presentation only.
+func set_charge(node: RefCounted, t: float) -> void:
+	if _charge_ring == null:
+		_charge_ring = _create_charge_ring()
+		add_child(_charge_ring)
+	if node == null or t <= 0.0:
+		_charge_ring.visible = false
+		return
+	_charge_ring.visible = true
+	_charge_ring.position = node.position
+	_charge_ring.points = _arc_points(CHARGE_RING_RADIUS, clamp(t, 0.0, 1.0))
+
+
+# Live draw-arc preview: a straight line from source to cursor tinted by the source
+# particle, with a snap ring when the cursor is locked onto a free socket. `active`
+# false clears everything. No model state is touched — this is pure presentation.
+func set_draw_arc(active: bool, source_pos: Vector2, cursor_pos: Vector2, snapped: bool, particle_id: StringName) -> void:
+	if _preview_line == null:
+		_preview_glow = _create_line(glow_width, glow_color, glow_color, true)
+		_preview_glow.z_index = 22
+		_preview_line = _create_line(line_width, line_color, glow_color, false)
+		_preview_line.z_index = 23
+		add_child(_preview_glow)
+		add_child(_preview_line)
+	if _snap_ring == null:
+		_snap_ring = _create_snap_ring()
+		add_child(_snap_ring)
+
+	if not active:
+		_preview_glow.visible = false
+		_preview_line.visible = false
+		_snap_ring.visible = false
+		return
+
+	var style := _particle_style(particle_id)
+	var points := PackedVector2Array([source_pos, cursor_pos])
+	_apply_line_style(_preview_glow, style["glow_width"], style["glow_color"], style["glow_color"], true)
+	_apply_line_style(_preview_line, style["line_width"], style["line_color"], style["glow_color"], false)
+	_preview_glow.points = points
+	_preview_line.points = points
+	_preview_glow.visible = true
+	_preview_line.visible = true
+
+	_snap_ring.visible = snapped
+	if snapped:
+		_snap_ring.position = cursor_pos
+
+
+func _create_charge_ring() -> Line2D:
+	var ring := Line2D.new()
+	ring.z_index = 25
+	ring.width = CHARGE_RING_WIDTH
+	ring.default_color = CHARGE_COLOR
+	ring.antialiased = true
+	ring.visible = false
+	return ring
+
+
+func _create_snap_ring() -> Line2D:
+	var ring := Line2D.new()
+	ring.z_index = 25
+	ring.width = SNAP_RING_WIDTH
+	ring.default_color = SNAP_COLOR
+	ring.antialiased = true
+	ring.closed = true
+	var points := PackedVector2Array()
+	for index in range(HANDLE_SEGMENTS):
+		var angle := TAU * float(index) / float(HANDLE_SEGMENTS)
+		points.append(Vector2(cos(angle), sin(angle)) * SNAP_RING_RADIUS)
+	ring.points = points
+	ring.visible = false
+	return ring
+
+
+# An open arc of `radius` sweeping clockwise from the top, covering `fraction` of the
+# full circle (used for the charge ring's fill).
+func _arc_points(radius: float, fraction: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var steps: int = max(1, int(ceil(CHARGE_RING_SEGMENTS * fraction)))
+	for index in range(steps + 1):
+		var angle := -PI * 0.5 + TAU * fraction * float(index) / float(steps)
+		points.append(Vector2(cos(angle), sin(angle)) * radius)
+	return points
 
 
 func _create_selection_ring() -> Line2D:
@@ -350,6 +451,7 @@ func _update_node_view(node) -> void:
 		add_child(handle)
 		node_views[node.id] = handle
 	handle.position = node.position
+	handle.color = _node_handle_color(node)
 
 
 func _create_node_handle(node) -> Polygon2D:
@@ -363,8 +465,16 @@ func _create_node_handle(node) -> Polygon2D:
 		var angle := TAU * float(index) / float(HANDLE_SEGMENTS)
 		points.append(Vector2(cos(angle), sin(angle)) * radius)
 	handle.polygon = points
-	handle.color = anchor_handle_color if is_anchor else node_handle_color
+	handle.color = _node_handle_color(node)
 	return handle
+
+
+# A seeded endpoint glows in its particle's colour so the source identity is visible;
+# plain nodes use the anchor/vertex defaults.
+func _node_handle_color(node) -> Color:
+	if not String(node.particle_id).is_empty():
+		return _particle_style(node.particle_id)["line_color"]
+	return anchor_handle_color if node.kind == NodeKind.ANCHOR else node_handle_color
 
 
 func _clear_node_views() -> void:
@@ -424,8 +534,11 @@ func _create_pulse_material() -> ShaderMaterial:
 
 
 func _edge_style(edge: GraphEdge) -> Dictionary:
-	var particle := String(edge.particle_id)
-	match particle:
+	return _particle_style(edge.particle_id)
+
+
+func _particle_style(particle_id: StringName) -> Dictionary:
+	match String(particle_id):
 		"electron":
 			return _style(Color(0.92, 0.96, 1.0, 0.96), Color(0.70, 0.86, 1.0, 0.40), false, line_width, glow_width)
 		"positron":

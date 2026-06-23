@@ -7,6 +7,8 @@ const CreateEdgeCommandScript := preload("res://interaction/command/CreateEdgeCo
 const MoveNodeCommandScript := preload("res://interaction/command/MoveNodeCommand.gd")
 const DeleteEdgeCommandScript := preload("res://interaction/command/DeleteEdgeCommand.gd")
 const DeleteNodeCommandScript := preload("res://interaction/command/DeleteNodeCommand.gd")
+const SeedParticleCommandScript := preload("res://interaction/command/SeedParticleCommand.gd")
+const AddNodeCommandScript := preload("res://interaction/command/AddNodeCommand.gd")
 
 # A press that releases within this distance of where it started is a tap (select),
 # not a drag (move / bend / connect).
@@ -294,6 +296,26 @@ func delete_selected() -> bool:
 	return true
 
 
+# Tray verb: drop a particle swatch onto an endpoint to station its seed there (the
+# source identity a long-press line will inherit). Targets the nearest node — anchors
+# included — within node_hit_radius; returns false if none is under the cursor.
+func seed_particle_at(world_pos: Vector2, particle_id: StringName) -> bool:
+	if graph_model == null:
+		return false
+	var node = _hit_test_any_node(world_pos)
+	if node == null:
+		return false
+	return undo_stack.push(SeedParticleCommandScript.new().configure(graph_model, node, particle_id))
+
+
+# Tray verb: drop the endpoint token onto empty canvas to add an external endpoint
+# (an ANCHOR with one free socket) that can then be seeded and grown into a line.
+func add_endpoint_at(world_pos: Vector2) -> bool:
+	if graph_model == null:
+		return false
+	return undo_stack.push(AddNodeCommandScript.new().configure(graph_model, world_pos))
+
+
 # Undo any live preview started on press (a nudged node, an inserted bend point)
 # without committing it — used when a press turns out to be a tap.
 func _rewind_preview() -> void:
@@ -321,6 +343,12 @@ func _hit_test_any_node(world_pos: Vector2):
 			best = node
 			best_distance = distance
 	return best
+
+
+# Public node pick (anchors included) so the HUD's tray snap-hint targets exactly the
+# node a seed/select would land on.
+func pick_any_node(world_pos: Vector2):
+	return _hit_test_any_node(world_pos)
 
 
 func undo() -> bool:

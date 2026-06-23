@@ -127,9 +127,33 @@ func delete_selected() -> bool:
 	return false
 
 
+# Tray verbs (Phase 2 interaction model): seed an endpoint with a particle swatch, or
+# drop a fresh external endpoint onto the canvas. Both are undoable.
+func seed_particle_at(world_pos: Vector2, particle_id: StringName) -> bool:
+	if curve_interaction != null and curve_interaction.has_method("seed_particle_at"):
+		return curve_interaction.seed_particle_at(world_pos, particle_id)
+	return false
+
+
+func add_endpoint_at(world_pos: Vector2) -> bool:
+	if curve_interaction != null and curve_interaction.has_method("add_endpoint_at"):
+		return curve_interaction.add_endpoint_at(world_pos)
+	return false
+
+
 func _on_selection_changed(node: RefCounted, edge: GraphEdge) -> void:
 	if curve_renderer != null and curve_renderer.has_method("set_selection"):
 		curve_renderer.set_selection(node, edge)
+
+
+func _on_charge_progress(node: RefCounted, t: float) -> void:
+	if curve_renderer != null and curve_renderer.has_method("set_charge"):
+		curve_renderer.set_charge(node, t)
+
+
+func _on_draw_arc_changed(active: bool, source_pos: Vector2, cursor_pos: Vector2, snapped: bool, particle_id: StringName) -> void:
+	if curve_renderer != null and curve_renderer.has_method("set_draw_arc"):
+		curve_renderer.set_draw_arc(active, source_pos, cursor_pos, snapped, particle_id)
 
 
 # Number of committed player actions (for the HUD's step counter).
@@ -254,6 +278,12 @@ func _ensure_children() -> void:
 	if curve_interaction != null and curve_interaction.has_signal("selection_changed"):
 		if not curve_interaction.selection_changed.is_connected(_on_selection_changed):
 			curve_interaction.selection_changed.connect(_on_selection_changed)
+	if curve_interaction != null and curve_interaction.has_signal("charge_progress"):
+		if not curve_interaction.charge_progress.is_connected(_on_charge_progress):
+			curve_interaction.charge_progress.connect(_on_charge_progress)
+	if curve_interaction != null and curve_interaction.has_signal("draw_arc_changed"):
+		if not curve_interaction.draw_arc_changed.is_connected(_on_draw_arc_changed):
+			curve_interaction.draw_arc_changed.connect(_on_draw_arc_changed)
 
 
 func _inject_model() -> void:

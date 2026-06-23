@@ -8,13 +8,15 @@ extends Control
 #   top-centre   one-line validator status (real rule/topology feedback)
 #   top-right    hint
 #   bottom-right undo / redo / restart
-#   bottom-centre tray of placeable particle legs (only when some are unplaced)
+#   bottom-centre tray of 5 particle swatches + 1 endpoint token
 #
-# Tray placement verb: each token is a free (unplaced) half-edge. Pressing a token
-# starts a half-edge drag via CurveInteraction; moving previews the line; releasing
-# on a vertex socket connects it. This reuses the existing connect gesture — no new
-# physics or commands. Completion is detected automatically, so there is no manual
-# verify button.
+# Tray verbs (Phase 2 interaction model):
+#   - drag a particle swatch onto an endpoint -> seed that endpoint's identity
+#     (SeedParticleCommand); the player then long-press-draws a line out of it.
+#   - drag the endpoint token onto empty canvas -> add an external endpoint
+#     (AddNodeCommand).
+# Both go through LevelRuntime and are undoable. The tray is fixed (always shown), so
+# it never reads or mirrors graph state — no lies about progress.
 #
 # The root has mouse_filter IGNORE and chrome sits only in the corners + bottom, so
 # pointer drags across the empty centre reach gameplay via the unhandled-input pass.
@@ -25,6 +27,8 @@ const CHIP := 46.0
 const TRAY_SEP := 12.0
 const TRAY_PAD := 14.0
 const TRAY_Y := 624.0
+# Empty particle_id marks the endpoint token (no particle, adds a node instead).
+const ENDPOINT_TOKEN := &""
 
 var runtime: LevelRuntime = null
 
@@ -41,9 +45,8 @@ var _drag_chip_label: Label
 var _snap_hint: Panel
 var _snap_hint_label: Label
 
-var _placing := false
-var _placing_half_edge: HalfEdge = null
-var _connected_model: GraphModel = null
+var _dragging := false
+var _drag_particle: StringName = ENDPOINT_TOKEN
 
 
 func _ready() -> void:
@@ -122,13 +125,20 @@ func _build() -> void:
 
 func _build_tray() -> void:
 	_tray_pill = UiFactory.panel(UiTheme.PANEL, UiTheme.BORDER, 18)
-	_tray_pill.visible = false
 	add_child(_tray_pill)
 
 	_token_box = HBoxContainer.new()
 	_token_box.add_theme_constant_override("separation", int(TRAY_SEP))
 	_token_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_token_box)
+
+	# Fixed tray: one swatch per QED particle, then the endpoint token. Never reflects
+	# graph state, so it cannot lie about progress.
+	var ids := ParticleSpec.qed_ids()
+	for particle_id in ids:
+		_token_box.add_child(_make_token(particle_id))
+	_token_box.add_child(_make_token(ENDPOINT_TOKEN))
+	_layout_tray(ids.size() + 1)
 
 
 func _build_overlays() -> void:
@@ -163,23 +173,19 @@ func _process(_delta: float) -> void:
 	_update_status()
 
 
-# Tray placement drag is driven here so the gesture continues after the pointer
-# leaves the token; events are consumed so gameplay/world input ignores them.
+# A tray drag is driven here so the gesture continues after the pointer leaves the
+# token; events are consumed so gameplay/world input ignores them. On release: a
+# particle swatch seeds the endpoint under the cursor; the endpoint token adds a node.
 func _input(event: InputEvent) -> void:
-	if not _placing or runtime == null:
-		return
-	var interaction = runtime.curve_interaction
-	if interaction == null:
+	if not _dragging or runtime == null:
 		return
 	if event is InputEventMouseMotion:
-		var world := _to_world(event.position)
-		interaction.handle_pointer_moved(world)
 		_drag_chip.position = event.position - Vector2(CHIP, CHIP) * 0.5
-		_update_snap_hint(interaction, world)
+		_update_snap_hint(_to_world(event.position))
 		accept_event()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-		interaction.handle_pointer_up(_to_world(event.position))
-		_end_placement()
+		_drop(_to_world(event.position))
+		_end_drag()
 		accept_event()
 
 
@@ -191,22 +197,8 @@ func _update_status() -> void:
 	_status_label.add_theme_color_override("font_color", UiTheme.GREEN if status["ok"] else UiTheme.MUTED)
 
 
-func _refresh_tray() -> void:
-	if runtime == null or _token_box == null:
-		return
-	for child in _token_box.get_children():
-		child.queue_free()
-	var free_legs := runtime.free_half_edges()
-	for half_edge in free_legs:
-		_token_box.add_child(_make_token(half_edge))
-	_layout_tray(free_legs.size())
-
-
 # Centre the tray pill at the bottom and size it to hug the chips.
 func _layout_tray(count: int) -> void:
-	_tray_pill.visible = count > 0
-	if count == 0:
-		return
 	var width := count * CHIP + (count - 1) * TRAY_SEP + TRAY_PAD * 2.0
 	var height := CHIP + TRAY_PAD * 2.0
 	_tray_pill.size = Vector2(width, height)
@@ -214,20 +206,20 @@ func _layout_tray(count: int) -> void:
 	_token_box.position = _tray_pill.position + Vector2(TRAY_PAD, TRAY_PAD)
 
 
-func _make_token(half_edge: HalfEdge) -> Control:
-	var spec := _spec_of(half_edge)
-	var tint := UiTheme.TEXT
-	if spec != null:
-		tint = _particle_color(spec.id)
+# A swatch (particle_id set) or the endpoint token (particle_id empty).
+func _make_token(particle_id: StringName) -> Control:
+	var spec := ParticleSpec.get_spec(particle_id)
+	var is_endpoint := spec == null
+	var tint := UiTheme.GREEN if is_endpoint else _particle_color(particle_id)
 	var token := Panel.new()
 	token.add_theme_stylebox_override("panel", UiTheme.panel_style(Color(0.13, 0.17, 0.32, 0.85), tint, 12))
 	token.custom_minimum_size = Vector2(CHIP, CHIP)
 	token.mouse_filter = Control.MOUSE_FILTER_STOP
 	token.mouse_default_cursor_shape = Control.CURSOR_DRAG
-	token.tooltip_text = spec.display_name if spec != null else "连线"
-	token.gui_input.connect(_on_token_input.bind(half_edge))
+	token.tooltip_text = "新端点" if is_endpoint else spec.display_name
+	token.gui_input.connect(_on_token_input.bind(particle_id))
 
-	var symbol := UiFactory.label(spec.symbol if spec != null else "线", 20, tint)
+	var symbol := UiFactory.label("＋" if is_endpoint else spec.symbol, 20, tint)
 	symbol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	symbol.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	symbol.size = Vector2(CHIP, CHIP)
@@ -236,42 +228,49 @@ func _make_token(half_edge: HalfEdge) -> Control:
 	return token
 
 
-func _on_token_input(event: InputEvent, half_edge: HalfEdge) -> void:
-	if _placing or runtime == null:
+func _on_token_input(event: InputEvent, particle_id: StringName) -> void:
+	if _dragging or runtime == null:
 		return
 	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed):
 		return
-	var interaction = runtime.curve_interaction
-	if interaction == null or not interaction.has_method("begin_half_edge_placement"):
-		return
-	var world := _to_world(get_viewport().get_mouse_position())
-	if not interaction.begin_half_edge_placement(half_edge, world):
-		return
-	_placing = true
-	_placing_half_edge = half_edge
-	var spec := _spec_of(half_edge)
-	_drag_chip_label.text = spec.symbol if spec != null else "?"
+	_dragging = true
+	_drag_particle = particle_id
+	var spec := ParticleSpec.get_spec(particle_id)
+	_drag_chip_label.text = "＋" if spec == null else spec.symbol
 	_drag_chip.position = get_viewport().get_mouse_position() - Vector2(CHIP, CHIP) * 0.5
 	_drag_chip.visible = true
 	accept_event()
 
 
-func _end_placement() -> void:
-	_placing = false
-	_placing_half_edge = null
+# Commit the drag: seed the targeted endpoint, or drop a fresh endpoint on empty space.
+func _drop(world: Vector2) -> void:
+	if String(_drag_particle).is_empty():
+		runtime.add_endpoint_at(world)
+	else:
+		runtime.seed_particle_at(world, _drag_particle)
+
+
+func _end_drag() -> void:
+	_dragging = false
+	_drag_particle = ENDPOINT_TOKEN
 	_drag_chip.visible = false
 	_snap_hint.visible = false
-	_refresh_tray()
 
 
-func _update_snap_hint(interaction, world: Vector2) -> void:
-	var snap: Dictionary = interaction.find_snap_socket(world, -1.0, _placing_half_edge)
-	if snap.is_empty():
+# While dragging a swatch, hint the endpoint it will seed; the endpoint token needs no
+# target (it drops onto empty space), so it shows no hint.
+func _update_snap_hint(world: Vector2) -> void:
+	var interaction = runtime.curve_interaction
+	if interaction == null or String(_drag_particle).is_empty() or not interaction.has_method("pick_any_node"):
+		_snap_hint.visible = false
+		return
+	var node = interaction.pick_any_node(world)
+	if node == null:
 		_snap_hint.visible = false
 		return
 	_snap_hint.visible = true
-	_snap_hint_label.text = "→ %s" % String(snap["node"].id).to_upper()
-	_snap_hint.position = _to_screen(snap["socket"].world_position()) + Vector2(16.0, -32.0)
+	_snap_hint_label.text = "→ %s" % String(node.id).to_upper()
+	_snap_hint.position = _to_screen(node.position) + Vector2(16.0, -32.0)
 
 
 func _refresh_header() -> void:
@@ -282,13 +281,8 @@ func _refresh_header() -> void:
 
 
 func _on_level_loaded(_spec: Resource) -> void:
-	_placing = false
+	_end_drag()
 	_refresh_header()
-	if runtime != null and runtime.graph_model != null and runtime.graph_model != _connected_model:
-		_connected_model = runtime.graph_model
-		if not _connected_model.topology_changed.is_connected(_refresh_tray):
-			_connected_model.topology_changed.connect(_refresh_tray)
-	_refresh_tray()
 
 
 func _on_undo() -> void:
@@ -315,13 +309,6 @@ func _on_delete() -> void:
 func _on_hint() -> void:
 	if runtime != null:
 		runtime.apply_reference_solution()
-
-
-func _spec_of(half_edge: HalfEdge) -> ParticleSpec:
-	var particle_id := half_edge.particle_id
-	if String(particle_id).is_empty() and half_edge.edge != null:
-		particle_id = half_edge.edge.particle_id
-	return ParticleSpec.get_spec(particle_id)
 
 
 func _particle_color(particle_id: StringName) -> Color:

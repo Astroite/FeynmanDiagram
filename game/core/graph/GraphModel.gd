@@ -113,6 +113,18 @@ func set_curve_points(edge_or_id: Variant, curve_points: Array[CurvePoint]) -> b
 	return true
 
 
+# Assign (or clear) the particle seed stationed at a node. Presentation/authoring
+# hint only — judging never reads it — but it drives the source identity a player-
+# drawn line inherits, so it emits node_changed for the renderer to re-tint.
+func set_node_particle(node_or_id: Variant, particle_id: StringName) -> bool:
+	var node = _resolve_node(node_or_id)
+	if node == null:
+		return false
+	node.particle_id = particle_id
+	node_changed.emit(node)
+	return true
+
+
 func get_node(node_id: StringName):
 	return nodes.get(node_id, null)
 
