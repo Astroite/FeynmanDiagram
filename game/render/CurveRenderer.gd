@@ -42,6 +42,16 @@ const SELECTION_COLOR := Color(1.0, 0.82, 0.38, 0.95)
 const SELECTION_RING_RADIUS := 15.0
 const SELECTION_EDGE_WIDTH := 9.0
 
+# Bézier control handles shown on a selected line: a thin arm from each endpoint to a
+# grabbable dot at the handle tip. which 0 = start out-tangent, which 1 = end
+# in-tangent. EDGE_HANDLE_LENGTH (default tip offset for a still-straight handle) is
+# kept in sync with CurveInteraction.
+const HANDLE_DOT_RADIUS := 6.0
+const HANDLE_ARM_WIDTH := 1.5
+const HANDLE_COLOR := Color(1.0, 0.82, 0.38, 0.9)
+const HANDLE_ARM_COLOR := Color(1.0, 0.82, 0.38, 0.45)
+const EDGE_HANDLE_LENGTH := 48.0
+
 # Long-press charge ring: an arc around the seeded endpoint that fills as the charge
 # builds (t in [0,1]). Draw-arc preview: a transient line from the source socket to
 # the cursor, tinted by the source particle and brightened when snapped to a socket.
@@ -58,6 +68,8 @@ var _selected_node: RefCounted = null
 var _selected_edge: GraphEdge = null
 var _selection_ring: Line2D = null
 var _selection_edge_line: Line2D = null
+var _handle_arms: Array[Line2D] = []
+var _handle_dots: Array[Polygon2D] = []
 var _charge_ring: Line2D = null
 var _preview_glow: Line2D = null
 var _preview_line: Line2D = null
@@ -123,6 +135,89 @@ func _update_selection_views() -> void:
 		_selection_edge_line.points = edge_views[_selected_edge.id]["line"].points
 	else:
 		_selection_edge_line.visible = false
+
+	_update_handle_views()
+
+
+# Two Bézier control handles on the selected line: a thin arm from each endpoint to a
+# grabbable dot at the handle tip. Hidden unless a line with >= 2 points is selected.
+func _update_handle_views() -> void:
+	if _handle_dots.is_empty():
+		for _i in range(2):
+			var arm := _create_handle_arm()
+			add_child(arm)
+			_handle_arms.append(arm)
+			var dot := _create_handle_dot()
+			add_child(dot)
+			_handle_dots.append(dot)
+
+	var show := _selected_edge != null and _selected_edge.curve_points.size() >= 2
+	for which in range(2):
+		if not show:
+			_handle_arms[which].visible = false
+			_handle_dots[which].visible = false
+			continue
+		var anchor := edge_handle_anchor(_selected_edge, which)
+		var tip := edge_handle_tip(_selected_edge, which)
+		_handle_arms[which].points = PackedVector2Array([anchor, tip])
+		_handle_arms[which].visible = true
+		_handle_dots[which].position = tip
+		_handle_dots[which].visible = true
+
+
+# Geometry mirrors CurveInteraction.edge_handle_anchor / edge_handle_tip: anchor is the
+# socket-aware endpoint position; tip is anchor + handle, or a default chord offset
+# when the handle is still zero (so it stays grabbable). Kept in sync with that file.
+func edge_handle_anchor(edge: GraphEdge, which: int) -> Vector2:
+	var points := edge.curve_points
+	if points.size() < 2:
+		return Vector2.ZERO
+	if which == 0:
+		if edge.half_edge_a != null and edge.half_edge_a.socket != null:
+			return edge.half_edge_a.socket.world_position()
+		return points[0].position
+	if edge.half_edge_b != null and edge.half_edge_b.socket != null:
+		return edge.half_edge_b.socket.world_position()
+	return points[points.size() - 1].position
+
+
+func edge_handle_tip(edge: GraphEdge, which: int) -> Vector2:
+	var points := edge.curve_points
+	if points.size() < 2:
+		return Vector2.ZERO
+	var anchor := edge_handle_anchor(edge, which)
+	var handle: Vector2 = points[0].out_handle if which == 0 else points[points.size() - 1].in_handle
+	if handle.length() > 0.001:
+		return anchor + handle
+	var other := edge_handle_anchor(edge, 1 - which)
+	var direction := other - anchor
+	if direction.length() <= 0.001:
+		return anchor
+	var length: float = min(direction.length() / 3.0, EDGE_HANDLE_LENGTH)
+	return anchor + direction.normalized() * length
+
+
+func _create_handle_arm() -> Line2D:
+	var arm := Line2D.new()
+	arm.z_index = 23
+	arm.width = HANDLE_ARM_WIDTH
+	arm.default_color = HANDLE_ARM_COLOR
+	arm.antialiased = true
+	arm.visible = false
+	return arm
+
+
+func _create_handle_dot() -> Polygon2D:
+	var dot := Polygon2D.new()
+	dot.z_index = 24
+	var points := PackedVector2Array()
+	for index in range(HANDLE_SEGMENTS):
+		var angle := TAU * float(index) / float(HANDLE_SEGMENTS)
+		points.append(Vector2(cos(angle), sin(angle)) * HANDLE_DOT_RADIUS)
+	dot.polygon = points
+	dot.color = HANDLE_COLOR
+	dot.visible = false
+	return dot
 
 
 # Long-press charge feedback: draw an arc around `node` that fills from 0 to t. A

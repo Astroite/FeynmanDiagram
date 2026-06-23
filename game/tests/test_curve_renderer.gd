@@ -126,6 +126,27 @@ func test_draw_arc_preview_tracks_source_cursor_and_snap() -> void:
 	assert_bool(renderer._snap_ring.visible).is_false()
 
 
+func test_selected_edge_shows_two_bezier_handles_and_clears() -> void:
+	var model := GraphModel.new()
+	var edge := model.add_edge(&"e", [
+		_point(Vector2.ZERO),
+		_point(Vector2(100.0, 0.0)),
+	])
+	var renderer := _renderer()
+	renderer.set_graph_model(model)
+
+	renderer.set_selection(null, edge)
+	assert_bool(renderer._handle_dots[0].visible).is_true()
+	assert_bool(renderer._handle_dots[1].visible).is_true()
+	# Dots sit at the handle tips; arms run from the endpoint anchors to those tips.
+	assert_that(renderer._handle_dots[0].position).is_equal(renderer.edge_handle_tip(edge, 0))
+	assert_that(renderer._handle_arms[0].points[0]).is_equal(renderer.edge_handle_anchor(edge, 0))
+
+	renderer.set_selection(null, null)
+	assert_bool(renderer._handle_dots[0].visible).is_false()
+	assert_bool(renderer._handle_dots[1].visible).is_false()
+
+
 func _renderer() -> CurveRenderer:
 	var renderer := CurveRenderer.new()
 	auto_free(renderer)

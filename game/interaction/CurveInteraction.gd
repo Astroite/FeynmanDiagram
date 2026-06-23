@@ -27,7 +27,7 @@ signal charge_progress(node: RefCounted, t: float)
 # cursor_pos (snapped to a socket when `snapped`). `active` false clears it.
 signal draw_arc_changed(active: bool, source_pos: Vector2, cursor_pos: Vector2, snapped: bool, particle_id: StringName)
 
-enum GestureKind { NONE, NODE_DRAG, EDGE_BEND, HALF_EDGE_DRAG, LONG_PRESS_CHARGING, DRAW_ARC }
+enum GestureKind { NONE, NODE_DRAG, EDGE_BEND, HALF_EDGE_DRAG, LONG_PRESS_CHARGING, DRAW_ARC, EDGE_HANDLE_DRAG }
 
 const GESTURE_NONE := GestureKind.NONE
 const GESTURE_NODE_DRAG := GestureKind.NODE_DRAG
@@ -35,10 +35,18 @@ const GESTURE_EDGE_BEND := GestureKind.EDGE_BEND
 const GESTURE_HALF_EDGE_DRAG := GestureKind.HALF_EDGE_DRAG
 const GESTURE_LONG_PRESS_CHARGING := GestureKind.LONG_PRESS_CHARGING
 const GESTURE_DRAW_ARC := GestureKind.DRAW_ARC
+const GESTURE_EDGE_HANDLE_DRAG := GestureKind.EDGE_HANDLE_DRAG
 const DEFAULT_NODE_HIT_RADIUS := 18.0
 const DEFAULT_EDGE_HIT_RADIUS := 10.0
 const DEFAULT_HALF_EDGE_HIT_RADIUS := 18.0
 const DEFAULT_SNAP_RADIUS := 32.0
+
+# A selected line shows two Bézier control handles (the start point's out-tangent and
+# the end point's in-tangent). EDGE_HANDLE_LENGTH is the default display offset for a
+# still-straight (zero) handle so it can be grabbed; the hit radius is how close the
+# pointer must land on a handle dot to grab it. Kept in sync with CurveRenderer.
+const EDGE_HANDLE_LENGTH := 48.0
+const EDGE_HANDLE_HIT_RADIUS := 14.0
 
 var graph_model: GraphModel = null
 var undo_stack := UndoStack.new()
@@ -62,6 +70,7 @@ var _current_pos := Vector2.ZERO
 var _node_start_pos := Vector2.ZERO
 var _edge_start_points: Array[CurvePoint] = []
 var _bend_point_index := -1
+var _active_handle_which := -1
 
 
 func _ready() -> void:
@@ -152,6 +161,17 @@ func handle_pointer_down(world_pos: Vector2) -> void:
 	_press_pos = world_pos
 	_current_pos = world_pos
 
+	# A selected line's two Bézier handles take priority over everything: grabbing one
+	# reshapes that end's tangent. Only the currently selected edge shows handles.
+	if selected_edge != null:
+		var which := _hit_test_edge_handle(selected_edge, world_pos)
+		if which != -1:
+			_active_edge = selected_edge
+			_active_handle_which = which
+			_gesture_kind = GestureKind.EDGE_HANDLE_DRAG
+			_edge_start_points = _duplicate_curve_points(_active_edge.curve_points)
+			return
+
 	# A seeded endpoint can grow a new line: start charging a long-press. If the node
 	# is also movable and the pointer moves past TAP_DISTANCE before the charge fills,
 	# the gesture demotes to a reposition drag (see handle_pointer_moved).
@@ -199,6 +219,8 @@ func handle_pointer_moved(world_pos: Vector2) -> void:
 			_apply_node_preview(world_pos)
 		GestureKind.EDGE_BEND:
 			_apply_bend_preview(world_pos)
+		GestureKind.EDGE_HANDLE_DRAG:
+			_apply_handle_preview(world_pos)
 		GestureKind.HALF_EDGE_DRAG:
 			_apply_half_edge_preview(world_pos)
 		GestureKind.LONG_PRESS_CHARGING:
@@ -222,9 +244,13 @@ func handle_pointer_up(world_pos: Vector2) -> void:
 
 	if world_pos.distance_to(_press_pos) < TAP_DISTANCE:
 		charge_progress.emit(null, 0.0)
+		# A tap that started on a handle keeps the line selected (the handle dot sits
+		# off the line, so re-running _select_at would wrongly clear the selection).
+		var was_handle := _gesture_kind == GestureKind.EDGE_HANDLE_DRAG
 		_rewind_preview()
 		_reset_gesture_state()
-		_select_at(world_pos)
+		if not was_handle:
+			_select_at(world_pos)
 		return
 
 	match _gesture_kind:
@@ -232,6 +258,8 @@ func handle_pointer_up(world_pos: Vector2) -> void:
 			_commit_node_drag(world_pos)
 		GestureKind.EDGE_BEND:
 			_commit_edge_bend()
+		GestureKind.EDGE_HANDLE_DRAG:
+			_commit_handle_drag()
 		GestureKind.HALF_EDGE_DRAG:
 			_commit_half_edge_drag(world_pos)
 
@@ -325,7 +353,7 @@ func _rewind_preview() -> void:
 		GestureKind.NODE_DRAG:
 			if _active_node != null:
 				graph_model.move_node(_active_node, _node_start_pos)
-		GestureKind.EDGE_BEND, GestureKind.HALF_EDGE_DRAG:
+		GestureKind.EDGE_BEND, GestureKind.HALF_EDGE_DRAG, GestureKind.EDGE_HANDLE_DRAG:
 			if _active_edge != null:
 				graph_model.set_curve_points(_active_edge, _edge_start_points)
 
@@ -366,7 +394,7 @@ func cancel_gesture() -> void:
 			GestureKind.NODE_DRAG:
 				if _active_node != null:
 					graph_model.move_node(_active_node, _node_start_pos)
-			GestureKind.EDGE_BEND, GestureKind.HALF_EDGE_DRAG:
+			GestureKind.EDGE_BEND, GestureKind.HALF_EDGE_DRAG, GestureKind.EDGE_HANDLE_DRAG:
 				if _active_edge != null:
 					graph_model.set_curve_points(_active_edge, _edge_start_points)
 	if _gesture_kind == GestureKind.LONG_PRESS_CHARGING or _gesture_kind == GestureKind.DRAW_ARC:
@@ -614,6 +642,91 @@ func _commit_edge_bend() -> void:
 	undo_stack.push(BendEdgeCommandScript.new().configure(graph_model, _active_edge, final_points, _edge_start_points))
 
 
+# The two Bézier control handles of a selected line: which 0 = the start point's
+# out-tangent, which 1 = the end point's in-tangent. The handle's anchor is the line's
+# endpoint position (socket-aware); its display tip is anchor + handle, or — when the
+# handle is still zero — a default offset along the chord so it can be grabbed.
+func edge_handle_anchor(edge: GraphEdge, which: int) -> Vector2:
+	var points := edge.curve_points
+	if points.size() < 2:
+		return Vector2.ZERO
+	if which == 0:
+		var start: CurvePoint = points[0]
+		if edge.half_edge_a != null and edge.half_edge_a.socket != null:
+			return edge.half_edge_a.socket.world_position()
+		return start.position
+	var last: CurvePoint = points[points.size() - 1]
+	if edge.half_edge_b != null and edge.half_edge_b.socket != null:
+		return edge.half_edge_b.socket.world_position()
+	return last.position
+
+
+func edge_handle_tip(edge: GraphEdge, which: int) -> Vector2:
+	var points := edge.curve_points
+	if points.size() < 2:
+		return Vector2.ZERO
+	var anchor := edge_handle_anchor(edge, which)
+	var handle: Vector2 = points[0].out_handle if which == 0 else points[points.size() - 1].in_handle
+	if handle.length() > 0.001:
+		return anchor + handle
+	# A straight (zero) handle gets a default tip pointing along the chord toward the
+	# other end, so the player has something to grab. Length is a third of the chord,
+	# capped, so the two handles never cross on a short line.
+	var other := edge_handle_anchor(edge, 1 - which)
+	var direction := (other - anchor)
+	if direction.length() <= 0.001:
+		return anchor
+	var length: float = min(direction.length() / 3.0, EDGE_HANDLE_LENGTH)
+	return anchor + direction.normalized() * length
+
+
+# Which handle (0 or 1) the pointer grabbed on the selected edge, or -1 if neither.
+func _hit_test_edge_handle(edge: GraphEdge, world_pos: Vector2) -> int:
+	if edge == null or edge.curve_points.size() < 2:
+		return -1
+	var best := -1
+	var best_distance := EDGE_HANDLE_HIT_RADIUS
+	for which in range(2):
+		var distance := world_pos.distance_to(edge_handle_tip(edge, which))
+		if distance <= best_distance:
+			best = which
+			best_distance = distance
+	return best
+
+
+# Live preview: set the dragged handle so its tip follows the cursor. Handle 0 is the
+# start out-tangent (anchor -> cursor); handle 1 the end in-tangent (anchor -> cursor).
+func _apply_handle_preview(world_pos: Vector2) -> void:
+	if _active_edge == null or _active_handle_which < 0:
+		return
+	graph_model.set_curve_points(_active_edge, _handle_points(world_pos))
+
+
+func _commit_handle_drag() -> void:
+	if graph_model == null or _active_edge == null or _active_handle_which < 0:
+		return
+	var final_points := _duplicate_curve_points(_active_edge.curve_points)
+	graph_model.set_curve_points(_active_edge, _edge_start_points) # rewind live preview
+	if _curve_points_equal(final_points, _edge_start_points):
+		return
+	undo_stack.push(BendEdgeCommandScript.new().configure(graph_model, _active_edge, final_points, _edge_start_points))
+
+
+# The edge's points with the active handle's tangent set so its tip sits at world_pos.
+func _handle_points(world_pos: Vector2) -> Array[CurvePoint]:
+	var points := _duplicate_curve_points(_edge_start_points)
+	if points.size() < 2:
+		return points
+	var index := 0 if _active_handle_which == 0 else points.size() - 1
+	var anchor := edge_handle_anchor(_active_edge, _active_handle_which)
+	var handle := world_pos - anchor
+	if _active_handle_which == 0:
+		points[index].out_handle = handle
+	else:
+		points[index].in_handle = handle
+	return points
+
+
 func _commit_half_edge_drag(world_pos: Vector2) -> void:
 	if graph_model == null or _active_half_edge == null or _active_edge == null:
 		return
@@ -713,6 +826,7 @@ func _reset_gesture_state() -> void:
 	_charge_elapsed = 0.0
 	_charge_ready = false
 	_bend_point_index = -1
+	_active_handle_which = -1
 	_edge_start_points.clear()
 
 
