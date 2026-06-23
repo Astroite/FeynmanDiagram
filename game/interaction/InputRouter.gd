@@ -3,12 +3,17 @@ extends Node
 signal pointer_down(world_pos: Vector2)
 signal pointer_moved(world_pos: Vector2)
 signal pointer_up(world_pos: Vector2)
+# Right-button "cut" stroke: drag across lines on empty canvas to slash them.
+signal cut_down(world_pos: Vector2)
+signal cut_moved(world_pos: Vector2)
+signal cut_up(world_pos: Vector2)
 signal undo()
 signal redo()
 signal cancel()
 signal delete()
 
 var _mouse_pressed := false
+var _right_pressed := false
 var _active_touch_index := -1
 
 
@@ -58,21 +63,29 @@ func _route_shortcut(event: InputEvent) -> bool:
 
 
 func _route_mouse_button(event: InputEventMouseButton) -> void:
-	if event.button_index != MOUSE_BUTTON_LEFT:
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_mouse_pressed = true
+			pointer_down.emit(screen_to_world(event.position))
+		elif _mouse_pressed:
+			_mouse_pressed = false
+			pointer_up.emit(screen_to_world(event.position))
 		return
 
-	if event.pressed:
-		_mouse_pressed = true
-		pointer_down.emit(screen_to_world(event.position))
-	elif _mouse_pressed:
-		_mouse_pressed = false
-		pointer_up.emit(screen_to_world(event.position))
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.pressed:
+			_right_pressed = true
+			cut_down.emit(screen_to_world(event.position))
+		elif _right_pressed:
+			_right_pressed = false
+			cut_up.emit(screen_to_world(event.position))
 
 
 func _route_mouse_motion(event: InputEventMouseMotion) -> void:
-	if not _mouse_pressed:
-		return
-	pointer_moved.emit(screen_to_world(event.position))
+	if _mouse_pressed:
+		pointer_moved.emit(screen_to_world(event.position))
+	elif _right_pressed:
+		cut_moved.emit(screen_to_world(event.position))
 
 
 func _route_screen_touch(event: InputEventScreenTouch) -> void:

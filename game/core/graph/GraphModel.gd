@@ -113,6 +113,32 @@ func set_curve_points(edge_or_id: Variant, curve_points: Array[CurvePoint]) -> b
 	return true
 
 
+# Reverse a line's orientation: swap its two half-edges and flip the stored curve so the
+# geometry is unchanged but the fermion arrow — which PhysicsGrammar derives from which
+# end is `a` — turns around. Particle identity and socket connections are untouched, so
+# topology is unchanged; only the edge view needs rebuilding. Reversing is its own
+# inverse. Emits edge_changed.
+func reverse_edge(edge_or_id: Variant) -> bool:
+	var edge := _resolve_edge(edge_or_id)
+	if edge == null:
+		return false
+	var swap := edge.half_edge_a
+	edge.half_edge_a = edge.half_edge_b
+	edge.half_edge_b = swap
+	edge.curve_points = _reverse_curve_points(edge.curve_points)
+	edge_changed.emit(edge)
+	return true
+
+
+# Reverse the point order; each point's in/out tangents swap roles since traversal flips.
+func _reverse_curve_points(curve_points: Array[CurvePoint]) -> Array[CurvePoint]:
+	var reversed: Array[CurvePoint] = []
+	for index in range(curve_points.size() - 1, -1, -1):
+		var point: CurvePoint = curve_points[index]
+		reversed.append(CurvePoint.create(point.position, point.out_handle, point.in_handle))
+	return reversed
+
+
 # Assign (or clear) the particle seed stationed at a node. Presentation/authoring
 # hint only — judging never reads it — but it drives the source identity a player-
 # drawn line inherits, so it emits node_changed for the renderer to re-tint.

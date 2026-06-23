@@ -147,6 +147,31 @@ func test_selected_edge_shows_two_bezier_handles_and_clears() -> void:
 	assert_bool(renderer._handle_dots[1].visible).is_false()
 
 
+func test_fermion_edge_draws_direction_arrow_but_photon_does_not() -> void:
+	var model := GraphModel.new()
+	var electron := model.add_edge(&"e", [_point(Vector2.ZERO), _point(Vector2(100.0, 0.0))])
+	electron.particle_id = &"electron"
+	var photon := model.add_edge(&"p", [_point(Vector2(0.0, 40.0)), _point(Vector2(100.0, 40.0))])
+	photon.particle_id = &"photon"
+	var renderer := _renderer()
+	renderer.set_graph_model(model)
+
+	assert_bool(renderer.get_edge_view(electron)["arrow"].visible).is_true()
+	assert_bool(renderer.get_edge_view(photon)["arrow"].visible).is_false()
+
+
+func test_cut_stroke_shows_trail_and_clears() -> void:
+	var renderer := _renderer()
+	renderer.set_graph_model(GraphModel.new())
+
+	renderer.set_cut_stroke(true, PackedVector2Array([Vector2.ZERO, Vector2(80.0, 10.0)]))
+	assert_bool(renderer._cut_trail.visible).is_true()
+	assert_int(renderer._cut_trail.points.size()).is_equal(2)
+
+	renderer.set_cut_stroke(false, PackedVector2Array())
+	assert_bool(renderer._cut_trail.visible).is_false()
+
+
 func _renderer() -> CurveRenderer:
 	var renderer := CurveRenderer.new()
 	auto_free(renderer)

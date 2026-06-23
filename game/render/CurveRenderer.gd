@@ -63,6 +63,15 @@ const SNAP_RING_RADIUS := 13.0
 const SNAP_RING_WIDTH := 2.5
 const SNAP_COLOR := Color(0.55, 1.0, 0.72, 0.95)
 
+# Fermion direction arrow: a small triangle at the line midpoint pointing along the
+# fermion flow (a->b for matter, b->a for antimatter). Photons carry no arrow.
+const ARROW_LENGTH := 9.0
+const ARROW_HALF_WIDTH := 6.5
+
+# Right-button cut stroke trail.
+const CUT_TRAIL_WIDTH := 2.5
+const CUT_TRAIL_COLOR := Color(1.0, 0.42, 0.42, 0.9)
+
 var _active_pulses: Array[Dictionary] = []
 var _selected_node: RefCounted = null
 var _selected_edge: GraphEdge = null
@@ -74,6 +83,7 @@ var _charge_ring: Line2D = null
 var _preview_glow: Line2D = null
 var _preview_line: Line2D = null
 var _snap_ring: Line2D = null
+var _cut_trail: Line2D = null
 
 
 func _process(delta: float) -> void:
@@ -519,12 +529,20 @@ func _update_edge_view(edge: GraphEdge) -> void:
 	_apply_line_style(line, style["line_width"], style["line_color"], style["glow_color"], false)
 	glow_line.points = draw_points
 	line.points = draw_points
+
+	var arrow: Polygon2D = view.get("arrow", null)
+	if arrow == null:
+		arrow = _create_arrow_head()
+		container.add_child(arrow)
+	_update_arrow_head(arrow, edge, curve, style["line_color"])
+
 	edge_views[edge.id] = {
 		"edge": edge,
 		"curve": curve,
 		"container": container,
 		"glow_line": glow_line,
 		"line": line,
+		"arrow": arrow,
 	}
 
 
@@ -577,6 +595,62 @@ func _clear_node_views() -> void:
 		if handle != null and is_instance_valid(handle):
 			handle.queue_free()
 	node_views.clear()
+
+
+# A triangle pointing along +x; rotation orients it along the fermion flow.
+func _create_arrow_head() -> Polygon2D:
+	var arrow := Polygon2D.new()
+	arrow.z_index = 11
+	arrow.polygon = PackedVector2Array([
+		Vector2(ARROW_LENGTH, 0.0),
+		Vector2(-ARROW_LENGTH * 0.6, ARROW_HALF_WIDTH),
+		Vector2(-ARROW_LENGTH * 0.6, -ARROW_HALF_WIDTH),
+	])
+	arrow.visible = false
+	return arrow
+
+
+# Place the fermion-flow arrow at the line midpoint, oriented a->b for matter and b->a
+# for antimatter (matching PhysicsGrammar.arrow_into_vertex). Photons get no arrow.
+func _update_arrow_head(arrow: Polygon2D, edge: GraphEdge, curve: Curve2D, color: Color) -> void:
+	var spec := ParticleSpec.get_spec(edge.particle_id)
+	if spec == null or spec.fermion_sign == 0 or curve.point_count < 2 or curve.get_baked_length() <= 0.001:
+		arrow.visible = false
+		return
+	var mid := sample_by_arc_length(curve, 0.5)
+	var direction := sample_by_arc_length(curve, 0.54) - sample_by_arc_length(curve, 0.46)
+	if spec.fermion_sign < 0:
+		direction = -direction
+	if direction.length() > 0.001:
+		arrow.rotation = direction.angle()
+	arrow.position = mid
+	arrow.color = color
+	arrow.visible = true
+
+
+# Right-button cut stroke: draw the slash trail. `active` false (or < 2 points) hides it.
+func set_cut_stroke(active: bool, points: PackedVector2Array) -> void:
+	if _cut_trail == null:
+		_cut_trail = _create_cut_trail()
+		add_child(_cut_trail)
+	if not active or points.size() < 2:
+		_cut_trail.visible = false
+		return
+	_cut_trail.points = points
+	_cut_trail.visible = true
+
+
+func _create_cut_trail() -> Line2D:
+	var trail := Line2D.new()
+	trail.z_index = 30
+	trail.width = CUT_TRAIL_WIDTH
+	trail.default_color = CUT_TRAIL_COLOR
+	trail.joint_mode = Line2D.LINE_JOINT_ROUND
+	trail.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	trail.end_cap_mode = Line2D.LINE_CAP_ROUND
+	trail.antialiased = true
+	trail.visible = false
+	return trail
 
 
 func _create_line(width: float, color: Color, glow: Color, is_glow: bool) -> Line2D:

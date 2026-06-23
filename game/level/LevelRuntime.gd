@@ -127,6 +127,18 @@ func delete_selected() -> bool:
 	return false
 
 
+# Reverse the selected fermion line's direction; the HUD shows its button only when
+# can_reverse_selected() is true (a fermion line is selected).
+func reverse_selected() -> bool:
+	if curve_interaction != null and curve_interaction.has_method("reverse_selected_edge"):
+		return curve_interaction.reverse_selected_edge()
+	return false
+
+
+func can_reverse_selected() -> bool:
+	return curve_interaction != null and curve_interaction.has_method("can_reverse_selection") and curve_interaction.can_reverse_selection()
+
+
 # Tray verbs (Phase 2 interaction model): seed an endpoint with a particle swatch, or
 # drop a fresh external endpoint onto the canvas. Both are undoable.
 func seed_particle_at(world_pos: Vector2, particle_id: StringName) -> bool:
@@ -154,6 +166,11 @@ func _on_charge_progress(node: RefCounted, t: float) -> void:
 func _on_draw_arc_changed(active: bool, source_pos: Vector2, cursor_pos: Vector2, snapped: bool, particle_id: StringName) -> void:
 	if curve_renderer != null and curve_renderer.has_method("set_draw_arc"):
 		curve_renderer.set_draw_arc(active, source_pos, cursor_pos, snapped, particle_id)
+
+
+func _on_cut_stroke_changed(active: bool, points: PackedVector2Array) -> void:
+	if curve_renderer != null and curve_renderer.has_method("set_cut_stroke"):
+		curve_renderer.set_cut_stroke(active, points)
 
 
 # Number of committed player actions (for the HUD's step counter).
@@ -284,6 +301,9 @@ func _ensure_children() -> void:
 	if curve_interaction != null and curve_interaction.has_signal("draw_arc_changed"):
 		if not curve_interaction.draw_arc_changed.is_connected(_on_draw_arc_changed):
 			curve_interaction.draw_arc_changed.connect(_on_draw_arc_changed)
+	if curve_interaction != null and curve_interaction.has_signal("cut_stroke_changed"):
+		if not curve_interaction.cut_stroke_changed.is_connected(_on_cut_stroke_changed):
+			curve_interaction.cut_stroke_changed.connect(_on_cut_stroke_changed)
 
 
 func _inject_model() -> void:

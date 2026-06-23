@@ -9,6 +9,8 @@ const DeleteEdgeCommandScript := preload("res://interaction/command/DeleteEdgeCo
 const DeleteNodeCommandScript := preload("res://interaction/command/DeleteNodeCommand.gd")
 const SeedParticleCommandScript := preload("res://interaction/command/SeedParticleCommand.gd")
 const AddNodeCommandScript := preload("res://interaction/command/AddNodeCommand.gd")
+const ReverseEdgeCommandScript := preload("res://interaction/command/ReverseEdgeCommand.gd")
+const DeleteEdgesCommandScript := preload("res://interaction/command/DeleteEdgesCommand.gd")
 
 # A press that releases within this distance of where it started is a tap (select),
 # not a drag (move / bend / connect).
@@ -26,6 +28,10 @@ signal charge_progress(node: RefCounted, t: float)
 # Live draw-arc preview: the renderer draws a transient arc from source_pos to
 # cursor_pos (snapped to a socket when `snapped`). `active` false clears it.
 signal draw_arc_changed(active: bool, source_pos: Vector2, cursor_pos: Vector2, snapped: bool, particle_id: StringName)
+
+# Live cut-stroke trail: the renderer draws the slash polyline while a right-button cut
+# is in progress. `active` false clears it.
+signal cut_stroke_changed(active: bool, points: PackedVector2Array)
 
 enum GestureKind { NONE, NODE_DRAG, EDGE_BEND, HALF_EDGE_DRAG, LONG_PRESS_CHARGING, DRAW_ARC, EDGE_HANDLE_DRAG }
 
@@ -71,6 +77,9 @@ var _node_start_pos := Vector2.ZERO
 var _edge_start_points: Array[CurvePoint] = []
 var _bend_point_index := -1
 var _active_handle_which := -1
+var _cutting := false
+var _cut_points := PackedVector2Array()
+var _cut_marked: Dictionary = {} # edge id -> GraphEdge crossed by the current stroke
 
 
 func _ready() -> void:
@@ -116,6 +125,9 @@ func connect_input_router(router: Node = null) -> void:
 	_connect_router_signal(&"pointer_down", Callable(self, "handle_pointer_down"))
 	_connect_router_signal(&"pointer_moved", Callable(self, "handle_pointer_moved"))
 	_connect_router_signal(&"pointer_up", Callable(self, "handle_pointer_up"))
+	_connect_router_signal(&"cut_down", Callable(self, "handle_cut_down"))
+	_connect_router_signal(&"cut_moved", Callable(self, "handle_cut_moved"))
+	_connect_router_signal(&"cut_up", Callable(self, "handle_cut_up"))
 	_connect_router_signal(&"undo", Callable(self, "undo"))
 	_connect_router_signal(&"redo", Callable(self, "redo"))
 	_connect_router_signal(&"cancel", Callable(self, "cancel_gesture"))
@@ -129,6 +141,9 @@ func disconnect_input_router() -> void:
 	_disconnect_router_signal(&"pointer_down", Callable(self, "handle_pointer_down"))
 	_disconnect_router_signal(&"pointer_moved", Callable(self, "handle_pointer_moved"))
 	_disconnect_router_signal(&"pointer_up", Callable(self, "handle_pointer_up"))
+	_disconnect_router_signal(&"cut_down", Callable(self, "handle_cut_down"))
+	_disconnect_router_signal(&"cut_moved", Callable(self, "handle_cut_moved"))
+	_disconnect_router_signal(&"cut_up", Callable(self, "handle_cut_up"))
 	_disconnect_router_signal(&"undo", Callable(self, "undo"))
 	_disconnect_router_signal(&"redo", Callable(self, "redo"))
 	_disconnect_router_signal(&"cancel", Callable(self, "cancel_gesture"))
@@ -322,6 +337,88 @@ func delete_selected() -> bool:
 		return false
 	clear_selection()
 	return true
+
+
+# Reverse the selected fermion line's direction (one undoable step). The selection is
+# kept — the same line stays highlighted with its arrow flipped.
+func reverse_selected_edge() -> bool:
+	if graph_model == null or selected_edge == null:
+		return false
+	return undo_stack.push(ReverseEdgeCommandScript.new().configure(graph_model, selected_edge))
+
+
+# Only fermion lines carry an arrow, so only they can be reversed (photons have none).
+func can_reverse_selection() -> bool:
+	if selected_edge == null:
+		return false
+	var spec := ParticleSpec.get_spec(selected_edge.particle_id)
+	return spec != null and spec.fermion_sign != 0
+
+
+# Right-button cut stroke: begins on empty canvas (not on a node or line), then any line
+# the stroke crosses is marked; release deletes them all as one undoable step.
+func handle_cut_down(world_pos: Vector2) -> void:
+	_cutting = false
+	_cut_marked.clear()
+	if graph_model == null:
+		return
+	if _hit_test_any_node(world_pos) != null or hit_test_edge(world_pos) != null:
+		return
+	_cutting = true
+	_cut_points = PackedVector2Array([world_pos])
+	cut_stroke_changed.emit(true, _cut_points)
+
+
+func handle_cut_moved(world_pos: Vector2) -> void:
+	if not _cutting:
+		return
+	_accumulate_cut(_cut_points[_cut_points.size() - 1], world_pos)
+	_cut_points.append(world_pos)
+	cut_stroke_changed.emit(true, _cut_points)
+
+
+func handle_cut_up(world_pos: Vector2) -> void:
+	if not _cutting:
+		return
+	_accumulate_cut(_cut_points[_cut_points.size() - 1], world_pos)
+	_cutting = false
+	cut_stroke_changed.emit(false, PackedVector2Array())
+	if _cut_marked.is_empty():
+		return
+	var cut_selected: bool = selected_edge != null and _cut_marked.has(selected_edge.id)
+	if undo_stack.push(DeleteEdgesCommandScript.new().configure(graph_model, _cut_marked.values())) and cut_selected:
+		clear_selection()
+	_cut_marked.clear()
+
+
+# Mark every line whose polyline the stroke segment from->to crosses.
+func _accumulate_cut(from: Vector2, to: Vector2) -> void:
+	if graph_model == null:
+		return
+	for edge: GraphEdge in graph_model.edges.values():
+		if _cut_marked.has(edge.id):
+			continue
+		var polyline := _edge_polyline(edge)
+		for index in range(polyline.size() - 1):
+			if Geometry2D.segment_intersects_segment(from, to, polyline[index], polyline[index + 1]) != null:
+				_cut_marked[edge.id] = edge
+				break
+
+
+# An edge's polyline with connected endpoints pinned to their live socket positions
+# (the stored curve point can be stale after a node move).
+func _edge_polyline(edge: GraphEdge) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	var points := edge.curve_points
+	var last := points.size() - 1
+	for index in range(points.size()):
+		var position := points[index].position
+		if index == 0 and edge.half_edge_a != null and edge.half_edge_a.socket != null:
+			position = edge.half_edge_a.socket.world_position()
+		elif index == last and edge.half_edge_b != null and edge.half_edge_b.socket != null:
+			position = edge.half_edge_b.socket.world_position()
+		result.append(position)
+	return result
 
 
 # Tray verb: drop a particle swatch onto an endpoint to station its seed there (the

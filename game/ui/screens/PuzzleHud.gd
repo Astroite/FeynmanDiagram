@@ -38,6 +38,7 @@ var _status_label: Label
 var _undo_button: Button
 var _redo_button: Button
 var _delete_button: Button
+var _reverse_button: Button
 var _tray_pill: Panel
 var _token_box: HBoxContainer
 var _drag_chip: Panel
@@ -119,6 +120,14 @@ func _build() -> void:
 	_delete_button.pressed.connect(_on_delete)
 	add_child(_delete_button)
 
+	# Appears only when a fermion line is selected: flips its arrow direction.
+	_reverse_button = UiFactory.icon_button("⇄")
+	UiFactory.place(_reverse_button, Vector2(1014.0, 636.0))
+	_reverse_button.tooltip_text = "反转费米子方向"
+	_reverse_button.visible = false
+	_reverse_button.pressed.connect(_on_reverse)
+	add_child(_reverse_button)
+
 	_build_tray()
 	_build_overlays()
 
@@ -170,6 +179,7 @@ func _process(_delta: float) -> void:
 	_undo_button.disabled = not runtime.can_undo()
 	_redo_button.disabled = not runtime.can_redo()
 	_delete_button.visible = runtime.has_selection()
+	_reverse_button.visible = runtime.can_reverse_selected()
 	_update_status()
 
 
@@ -303,6 +313,11 @@ func _on_restart() -> void:
 func _on_delete() -> void:
 	if runtime != null:
 		runtime.delete_selected()
+
+
+func _on_reverse() -> void:
+	if runtime != null:
+		runtime.reverse_selected()
 
 
 # Honest hint for iteration 0: reveal the stored reference solution.
