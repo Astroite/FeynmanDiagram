@@ -48,12 +48,12 @@ func do() -> bool:
 	if edge == null:
 		return false
 
-	var sign := _fermion_sign(_particle_id)
+	var f_sign := _fermion_sign(_particle_id)
 	edge.particle_id = _particle_id
 	edge.half_edge_a.particle_id = _particle_id
-	edge.half_edge_a.fermion_flow = sign
+	edge.half_edge_a.fermion_flow = f_sign
 	edge.half_edge_b.particle_id = _particle_id
-	edge.half_edge_b.fermion_flow = sign
+	edge.half_edge_b.fermion_flow = f_sign
 
 	var connected_source := _model.connect_half_edge(edge.half_edge_a, _source_node, _source_socket)
 	var connected_target := _model.connect_half_edge(edge.half_edge_b, _target_node, _target_socket)

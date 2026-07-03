@@ -64,16 +64,16 @@ static func _ensure_registry() -> void:
 	_register(&"photon", "γ", "光子", 0, 0, 0, Kind.BOSON, &"photon", &"photon", 0)
 
 
-static func _register(id: StringName, symbol: String, display_name: String, charge3: int, lepton_e: int, lepton_mu: int, kind: int, family: StringName, antiparticle: StringName, fermion_sign: int) -> void:
+static func _register(p_id: StringName, p_symbol: String, p_display_name: String, p_charge3: int, p_lepton_e: int, p_lepton_mu: int, p_kind: int, p_family: StringName, p_antiparticle: StringName, p_fermion_sign: int) -> void:
 	var spec := ParticleSpec.new()
-	spec.id = id
-	spec.symbol = symbol
-	spec.display_name = display_name
-	spec.charge3 = charge3
-	spec.lepton_e = lepton_e
-	spec.lepton_mu = lepton_mu
-	spec.kind = kind
-	spec.family = family
-	spec.antiparticle = antiparticle
-	spec.fermion_sign = fermion_sign
-	_registry[id] = spec
+	spec.id = p_id
+	spec.symbol = p_symbol
+	spec.display_name = p_display_name
+	spec.charge3 = p_charge3
+	spec.lepton_e = p_lepton_e
+	spec.lepton_mu = p_lepton_mu
+	spec.kind = p_kind
+	spec.family = p_family
+	spec.antiparticle = p_antiparticle
+	spec.fermion_sign = p_fermion_sign
+	_registry[p_id] = spec

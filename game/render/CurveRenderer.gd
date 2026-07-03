@@ -161,9 +161,9 @@ func _update_handle_views() -> void:
 			add_child(dot)
 			_handle_dots.append(dot)
 
-	var show := _selected_edge != null and _selected_edge.curve_points.size() >= 2
+	var should_show := _selected_edge != null and _selected_edge.curve_points.size() >= 2
 	for which in range(2):
-		if not show:
+		if not should_show:
 			_handle_arms[which].visible = false
 			_handle_dots[which].visible = false
 			continue
@@ -247,7 +247,7 @@ func set_charge(node: RefCounted, t: float) -> void:
 # Live draw-arc preview: a straight line from source to cursor tinted by the source
 # particle, with a snap ring when the cursor is locked onto a free socket. `active`
 # false clears everything. No model state is touched — this is pure presentation.
-func set_draw_arc(active: bool, source_pos: Vector2, cursor_pos: Vector2, snapped: bool, particle_id: StringName) -> void:
+func set_draw_arc(active: bool, source_pos: Vector2, cursor_pos: Vector2, is_snapped: bool, particle_id: StringName) -> void:
 	if _preview_line == null:
 		_preview_glow = _create_line(glow_width, glow_color, glow_color, true)
 		_preview_glow.z_index = 22
@@ -274,8 +274,8 @@ func set_draw_arc(active: bool, source_pos: Vector2, cursor_pos: Vector2, snappe
 	_preview_glow.visible = true
 	_preview_line.visible = true
 
-	_snap_ring.visible = snapped
-	if snapped:
+	_snap_ring.visible = is_snapped
+	if is_snapped:
 		_snap_ring.position = cursor_pos
 
 
@@ -356,12 +356,12 @@ func build_curve(edge: GraphEdge) -> Curve2D:
 	var last_index := edge.curve_points.size() - 1
 	for index in range(edge.curve_points.size()):
 		var point: CurvePoint = edge.curve_points[index]
-		var position := point.position
+		var pt_pos: Vector2 = point.position
 		if index == 0 and edge.half_edge_a != null and edge.half_edge_a.socket != null:
-			position = edge.half_edge_a.socket.world_position()
+			pt_pos = edge.half_edge_a.socket.world_position()
 		elif index == last_index and edge.half_edge_b != null and edge.half_edge_b.socket != null:
-			position = edge.half_edge_b.socket.world_position()
-		curve.add_point(position, point.in_handle, point.out_handle)
+			pt_pos = edge.half_edge_b.socket.world_position()
+		curve.add_point(pt_pos, point.in_handle, point.out_handle)
 	return curve
 
 
@@ -670,13 +670,13 @@ func _apply_line_style(line: Line2D, width: float, color: Color, glow: Color, is
 
 
 func _create_line_material(color: Color, glow: Color, is_glow: bool) -> ShaderMaterial:
-	var material := ShaderMaterial.new()
-	material.shader = GlowLineShader
-	material.set_shader_parameter("line_color", color)
-	material.set_shader_parameter("glow_color", glow)
-	material.set_shader_parameter("glow_strength", 1.45 if is_glow else 0.25)
-	material.set_shader_parameter("core_alpha", 0.38 if is_glow else 0.96)
-	return material
+	var mat := ShaderMaterial.new()
+	mat.shader = GlowLineShader
+	mat.set_shader_parameter("line_color", color)
+	mat.set_shader_parameter("glow_color", glow)
+	mat.set_shader_parameter("glow_strength", 1.45 if is_glow else 0.25)
+	mat.set_shader_parameter("core_alpha", 0.38 if is_glow else 0.96)
+	return mat
 
 
 func _create_pulse_dot() -> Polygon2D:
@@ -693,13 +693,13 @@ func _create_pulse_dot() -> Polygon2D:
 
 
 func _create_pulse_material() -> ShaderMaterial:
-	var material := ShaderMaterial.new()
-	material.shader = GlowLineShader
-	material.set_shader_parameter("line_color", pulse_color)
-	material.set_shader_parameter("glow_color", glow_color)
-	material.set_shader_parameter("glow_strength", 1.8)
-	material.set_shader_parameter("core_alpha", 1.0)
-	return material
+	var mat := ShaderMaterial.new()
+	mat.shader = GlowLineShader
+	mat.set_shader_parameter("line_color", pulse_color)
+	mat.set_shader_parameter("glow_color", glow_color)
+	mat.set_shader_parameter("glow_strength", 1.8)
+	mat.set_shader_parameter("core_alpha", 1.0)
+	return mat
 
 
 func _edge_style(edge: GraphEdge) -> Dictionary:

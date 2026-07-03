@@ -102,12 +102,12 @@ func _on_level_complete(spec: Resource) -> void:
 # slightly zoomed-out while the old one fades and pushes past) instead of a hard
 # cut. State (_screen) and gameplay visibility update synchronously; only the
 # visuals animate, so navigation logic and tests are unaffected.
-func _show(screen: int) -> void:
+func _show(next_screen: Screen) -> void:
 	var previous := _screen_node(_screen)
-	_screen = screen
+	_screen = next_screen
 	_sync_runtime_visibility()
 
-	var target := _screen_node(screen)
+	var target := _screen_node(next_screen)
 	if _transition != null and _transition.is_valid():
 		_transition.kill()
 	if previous == target:
@@ -116,8 +116,8 @@ func _show(screen: int) -> void:
 		_present_transition(previous, target)
 
 
-func _screen_node(screen: int) -> Control:
-	match screen:
+func _screen_node(which: Screen) -> Control:
+	match which:
 		Screen.LEVEL_SELECT:
 			return _level_select
 		Screen.PUZZLE:

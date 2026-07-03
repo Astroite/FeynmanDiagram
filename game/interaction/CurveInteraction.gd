@@ -660,9 +660,9 @@ func _apply_draw_preview(world_pos: Vector2) -> void:
 	var source_socket := _first_free_socket(_draw_source)
 	var source_pos: Vector2 = source_socket.world_position() if source_socket != null else _draw_source.position
 	var snap := find_snap_socket(world_pos, snap_radius)
-	var snapped: bool = not snap.is_empty() and snap["node"] != _draw_source
-	var cursor: Vector2 = snap["socket"].world_position() if snapped else world_pos
-	draw_arc_changed.emit(true, source_pos, cursor, snapped, _draw_source.particle_id)
+	var is_snapped: bool = not snap.is_empty() and snap["node"] != _draw_source
+	var cursor: Vector2 = snap["socket"].world_position() if is_snapped else world_pos
+	draw_arc_changed.emit(true, source_pos, cursor, is_snapped, _draw_source.particle_id)
 
 
 # Release: if the cursor is snapped to a free socket on another node, create the new

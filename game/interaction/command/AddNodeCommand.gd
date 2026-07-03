@@ -10,7 +10,7 @@ extends Command
 var _model: GraphModel = null
 var _node_id: StringName = &""
 var _position := Vector2.ZERO
-var _kind := NodeKind.ANCHOR
+var _kind: int = NodeKind.ANCHOR
 
 
 func configure(model: GraphModel, position: Vector2, kind: int = NodeKind.ANCHOR) -> AddNodeCommand:

@@ -57,9 +57,9 @@ func _draw_quantum_streams() -> void:
 		draw_circle(pulse, 2.8, Color(0.75, 0.90, 1.0, 0.72))
 
 
-func _build_starfield(count: int, width: float, height: float, seed: int) -> Array[Dictionary]:
+func _build_starfield(count: int, width: float, height: float, rng_seed: int) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var state := seed
+	var state := rng_seed
 	for _index in range(count):
 		state = int((state * 1664525 + 1013904223) & 0x7fffffff)
 		var rx := float(state) / float(0x7fffffff)

@@ -163,9 +163,9 @@ func _on_charge_progress(node: RefCounted, t: float) -> void:
 		curve_renderer.set_charge(node, t)
 
 
-func _on_draw_arc_changed(active: bool, source_pos: Vector2, cursor_pos: Vector2, snapped: bool, particle_id: StringName) -> void:
+func _on_draw_arc_changed(active: bool, source_pos: Vector2, cursor_pos: Vector2, is_snapped: bool, particle_id: StringName) -> void:
 	if curve_renderer != null and curve_renderer.has_method("set_draw_arc"):
-		curve_renderer.set_draw_arc(active, source_pos, cursor_pos, snapped, particle_id)
+		curve_renderer.set_draw_arc(active, source_pos, cursor_pos, is_snapped, particle_id)
 
 
 func _on_cut_stroke_changed(active: bool, points: PackedVector2Array) -> void:
